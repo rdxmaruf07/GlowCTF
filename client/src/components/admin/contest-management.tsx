@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { getQueryFn, apiRequest, queryClient } from "@lib/queryClient";
+import { getQueryFn, apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -124,7 +124,7 @@ export default function ContestManagement() {
     isLoading: isLoadingContests,
   } = useQuery<Contest[]>({
     queryKey: ["/api/contests"],
-    queryFn: getQueryFn(),
+    queryFn: getQueryFn({ on401: "throw" }),
   });
 
   // Query for challenges
@@ -133,7 +133,7 @@ export default function ContestManagement() {
     isLoading: isLoadingChallenges,
   } = useQuery<Challenge[]>({
     queryKey: ["/api/challenges"],
-    queryFn: getQueryFn(),
+    queryFn: getQueryFn({ on401: "throw" }),
   });
 
   // Filter contests based on active tab
@@ -160,7 +160,7 @@ export default function ContestManagement() {
     refetch: refetchContestChallenges,
   } = useQuery<Challenge[]>({
     queryKey: ["/api/contests", selectedContest?.id, "challenges"],
-    queryFn: getQueryFn(),
+    queryFn: getQueryFn({ on401: "throw" }),
     enabled: !!selectedContest,
   });
 

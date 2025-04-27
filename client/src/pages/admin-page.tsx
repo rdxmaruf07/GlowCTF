@@ -4,6 +4,7 @@ import AppLayout from "@/components/layout/app-layout";
 import ChallengeManagement from "@/components/admin/challenge-management";
 import UserManagement from "@/components/admin/user-management";
 import APIKeyManagement from "@/components/admin/api-key-management";
+import ContestManagement from "@/components/admin/contest-management";
 import AddChallengeForm from "@/components/admin/add-challenge-form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -46,14 +47,19 @@ export default function AdminPage() {
           <AddChallengeForm onBack={() => setShowAddChallenge(false)} />
         ) : (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full md:w-auto grid-cols-3">
+            <TabsList className="grid w-full md:w-auto grid-cols-4">
               <TabsTrigger value="challenges">Challenges</TabsTrigger>
+              <TabsTrigger value="contests">Contests</TabsTrigger>
               <TabsTrigger value="users">Users</TabsTrigger>
               <TabsTrigger value="api-keys">API Keys</TabsTrigger>
             </TabsList>
             
             <TabsContent value="challenges" className="space-y-6 mt-6">
               <ChallengeManagement onAddNew={() => setShowAddChallenge(true)} />
+            </TabsContent>
+            
+            <TabsContent value="contests" className="space-y-6 mt-6">
+              <ContestManagement />
             </TabsContent>
             
             <TabsContent value="users" className="space-y-6 mt-6">
