@@ -2,11 +2,12 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import AppLayout from "@/components/layout/app-layout";
 import ChallengeCard from "@/components/challenges/challenge-card";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import PicoCTFChallengeList from "@/components/challenges/picoctf-challenge-list";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search } from "lucide-react";
+import { Search, AlertTriangle } from "lucide-react";
 import { Challenge } from "@shared/schema";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 
