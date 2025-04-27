@@ -83,6 +83,11 @@ export default function Sidebar() {
       href: "/practice",
       label: "Practice Arena",
       icon: <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-3 text-lg"><path d="M17 9c.63.58 1 1.4 1 2.3v.7H8V12c0-.9.38-1.72 1-2.3"></path><path d="M12 12v6"></path><path d="M5 5a3 3 0 0 1 5.83 1H7"></path><path d="M14 10h2.83A3 3 0 0 0 16 6"></path><circle cx="12" cy="19" r="1"></circle></svg>
+    },
+    {
+      href: "/team",
+      label: "Our Team",
+      icon: <Users className="mr-3 text-lg" />
     }
   ];
   
