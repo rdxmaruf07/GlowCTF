@@ -1,0 +1,128 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 240 10% 3.9%;
+  --foreground: 0 0% 98%;
+  --card: 240 10% 12%;
+  --card-foreground: 0 0% 98%;
+  --card-hover: 240 10% 16%;
+  --popover: 240 10% 3.9%;
+  --popover-foreground: 0 0% 98%;
+  --primary: 183 100% 50%;
+  --primary-foreground: 240 10% 3.9%;
+  --secondary: 240 3.7% 15.9%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 240 3.7% 15.9%;
+  --muted-foreground: 240 5% 64.9%;
+  --accent: 325 90% 54%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 240 3.7% 15.9%;
+  --input: 240 3.7% 15.9%;
+  --ring: 183 100% 50%;
+  --radius: 0.5rem;
+
+  /* Sidebar */
+  --sidebar-background: 240 10% 12%;
+  --sidebar-foreground: 0 0% 98%;
+  --sidebar-primary: 183 100% 50%;
+  --sidebar-primary-foreground: 240 10% 3.9%;
+  --sidebar-accent: 325 90% 54%;
+  --sidebar-accent-foreground: 0 0% 98%;
+  --sidebar-border: 240 3.7% 15.9%;
+  --sidebar-ring: 183 100% 50%;
+
+  /* Custom colors */
+  --neon-teal: 183 100% 50%;
+  --neon-pink: 325 90% 54%;
+  --neon-green: 142 100% 50%;
+  --warning: 39 100% 50%;
+  --error: 0 100% 50%;
+  --dark-bg: 240 10% 3.9%;
+  --dark-card: 240 10% 12%;
+  --dark-card-hover: 240 10% 16%;
+  --text-primary: 0 0% 88%;
+  --text-secondary: 0 0% 63%;
+
+  /* Chart colors */
+  --chart-1: 183 100% 50%;
+  --chart-2: 325 90% 54%;
+  --chart-3: 142 100% 50%;
+  --chart-4: 39 100% 50%;
+  --chart-5: 0 100% 50%;
+}
+
+/* Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Orbitron:wght@400;500;700&display=swap');
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans bg-background text-foreground;
+  }
+  
+  /* Custom styles */
+  .gradient-text {
+    @apply bg-gradient-to-r from-[#0cffec] to-[#ff47c7] bg-clip-text text-transparent;
+  }
+  
+  .neon-border {
+    @apply relative hover:shadow-[0_0_10px_rgba(12,255,236,0.7)];
+    transition: box-shadow 0.3s ease;
+  }
+  
+  .neon-glow {
+    text-shadow: 0 0 5px hsl(var(--neon-teal)), 0 0 10px hsl(var(--neon-teal));
+  }
+  
+  .neon-pink-glow {
+    text-shadow: 0 0 5px hsl(var(--neon-pink)), 0 0 10px hsl(var(--neon-pink));
+  }
+  
+  .neon-green-glow {
+    text-shadow: 0 0 5px hsl(var(--neon-green)), 0 0 10px hsl(var(--neon-green));
+  }
+  
+  .badge-glow {
+    box-shadow: 0 0 5px currentColor;
+  }
+  
+  .hexagon {
+    clip-path: polygon(50% 0%, 95% 25%, 95% 75%, 50% 100%, 5% 75%, 5% 25%);
+  }
+  
+  .cyber-grid {
+    background-image: 
+      linear-gradient(rgba(12, 255, 236, 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(12, 255, 236, 0.05) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+  
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  
+  /* Typography */
+  .font-orbitron {
+    font-family: 'Orbitron', sans-serif;
+  }
+  
+  .font-mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+  
+  .font-sans {
+    font-family: 'Inter', sans-serif;
+  }
+}
