@@ -66,7 +66,7 @@ export interface IStorage {
   getUserChatbotKeys(userId: number): Promise<ChatbotKey[]>;
   getAllChatbotKeys(): Promise<ChatbotKey[]>;
   getChatbotKeyByProvider(provider: string): Promise<ChatbotKey | undefined>;
-  updateChatbotKey(id: number, data: { key?: string; isActive?: boolean }): Promise<ChatbotKey>;
+  updateChatbotKey(id: number, data: { apiKey?: string; isActive?: boolean }): Promise<ChatbotKey>;
   deleteChatbotKey(id: number): Promise<void>;
   saveChatHistory(data: InsertChatHistory): Promise<ChatHistory>;
   getUserChatHistory(userId: number): Promise<ChatHistory[]>;
@@ -264,11 +264,11 @@ export class DatabaseStorage implements IStorage {
     return key;
   }
   
-  async updateChatbotKey(id: number, data: { key?: string; isActive?: boolean }): Promise<ChatbotKey> {
+  async updateChatbotKey(id: number, data: { apiKey?: string; isActive?: boolean }): Promise<ChatbotKey> {
     const updateData: any = {};
     
-    if (data.key !== undefined) {
-      updateData.key = data.key;
+    if (data.apiKey !== undefined) {
+      updateData.apiKey = data.apiKey;
     }
     
     if (data.isActive !== undefined) {

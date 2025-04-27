@@ -35,7 +35,7 @@ export function setupAdminRoutes(app: Express) {
       
       // Remove full key values for security, just show the first and last few characters
       const maskedKeys = apiKeys.map(key => {
-        const originalKey = key.key;
+        const originalKey = key.apiKey;
         let maskedKey = originalKey;
         
         if (originalKey && originalKey.length > 8) {
@@ -44,7 +44,7 @@ export function setupAdminRoutes(app: Express) {
         
         return {
           ...key,
-          key: maskedKey
+          apiKey: maskedKey
         };
       });
       
@@ -71,7 +71,7 @@ export function setupAdminRoutes(app: Express) {
       if (existingKey) {
         // Update existing key
         result = await storage.updateChatbotKey(existingKey.id, {
-          key,
+          apiKey: key,
           isActive: isActive ?? true
         });
       } else {
@@ -83,7 +83,7 @@ export function setupAdminRoutes(app: Express) {
         result = await storage.saveChatbotKey({
           userId: req.user.id,
           provider,
-          key,
+          apiKey: key,
           isActive: isActive ?? true
         });
       }

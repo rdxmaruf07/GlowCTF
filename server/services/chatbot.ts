@@ -12,7 +12,7 @@ export async function initializeAIClients() {
     // Get OpenAI key
     const openaiKey = await storage.getChatbotKeyByProvider("openai");
     if (openaiKey && openaiKey.isActive) {
-      openai = new OpenAI({ apiKey: openaiKey.key });
+      openai = new OpenAI({ apiKey: openaiKey.apiKey });
       console.log("OpenAI client initialized with key from database");
     } else {
       // Fallback to environment variable
@@ -23,7 +23,7 @@ export async function initializeAIClients() {
     // Get Anthropic key
     const anthropicKey = await storage.getChatbotKeyByProvider("anthropic");
     if (anthropicKey && anthropicKey.isActive) {
-      anthropic = new Anthropic({ apiKey: anthropicKey.key });
+      anthropic = new Anthropic({ apiKey: anthropicKey.apiKey });
       console.log("Anthropic client initialized with key from database");
     } else {
       // Fallback to environment variable

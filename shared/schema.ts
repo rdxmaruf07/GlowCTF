@@ -96,7 +96,7 @@ export const chatbotKeys = pgTable("chatbot_keys", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
   provider: text("provider").notNull(), // openai, anthropic
-  key: text("key").notNull(),
+  apiKey: text("api_key").notNull(),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -104,7 +104,7 @@ export const chatbotKeys = pgTable("chatbot_keys", {
 export const insertChatbotKeySchema = createInsertSchema(chatbotKeys).pick({
   userId: true,
   provider: true,
-  key: true,
+  apiKey: true,
   isActive: true,
 });
 

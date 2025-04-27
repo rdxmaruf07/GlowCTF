@@ -157,7 +157,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const chatbotKey = await storage.saveChatbotKey({
         userId: req.user.id,
         provider,
-        key,
+        apiKey: key,
         isActive: true
       });
       
