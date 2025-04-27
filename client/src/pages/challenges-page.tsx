@@ -7,7 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, AlertTriangle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Search, AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react";
 import { Challenge } from "@shared/schema";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 
@@ -153,10 +154,16 @@ export default function ChallengesPage() {
               <Pagination className="mt-8">
                 <PaginationContent>
                   <PaginationItem>
-                    <PaginationPrevious
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                       disabled={currentPage === 1}
-                    />
+                      className="gap-1"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      <span>Previous</span>
+                    </Button>
                   </PaginationItem>
                   
                   {[...Array(totalPages)].map((_, i) => (
@@ -171,10 +178,16 @@ export default function ChallengesPage() {
                   ))}
                   
                   <PaginationItem>
-                    <PaginationNext
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                       disabled={currentPage === totalPages}
-                    />
+                      className="gap-1"
+                    >
+                      <span>Next</span>
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
                   </PaginationItem>
                 </PaginationContent>
               </Pagination>

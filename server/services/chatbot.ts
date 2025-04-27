@@ -11,32 +11,35 @@ export const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY
 });
 
-interface ChatMessage {
+export interface ChatMessage {
   role: string;
   content: string;
 }
 
 interface CompletionResult {
   success: boolean;
-  message?: ChatMessage;
+  message?: any;
   usage?: any;
   error?: string;
 }
 
 // Function to generate OpenAI completions
-export async function generateOpenAICompletion(messages: ChatMessage[]): Promise<CompletionResult> {
+export async function generateOpenAICompletion(messages: any[]): Promise<CompletionResult> {
   try {
     // the newest OpenAI model is "gpt-4o" which was released May 13, 2024
     const completion = await openai.chat.completions.create({
       model: "gpt-4o",
-      messages,
+      messages: messages as any,
       temperature: 0.7,
       max_tokens: 1000,
     });
 
     return {
       success: true,
-      message: completion.choices[0].message,
+      message: {
+        role: completion.choices[0].message.role,
+        content: completion.choices[0].message.content || "",
+      },
       usage: completion.usage,
     };
   } catch (error: any) {
@@ -49,7 +52,7 @@ export async function generateOpenAICompletion(messages: ChatMessage[]): Promise
 }
 
 // Function to generate Anthropic completions
-export async function generateAnthropicCompletion(messages: ChatMessage[]): Promise<CompletionResult> {
+export async function generateAnthropicCompletion(messages: any[]): Promise<CompletionResult> {
   try {
     // the newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
     const completion = await anthropic.messages.create({
@@ -61,9 +64,17 @@ export async function generateAnthropicCompletion(messages: ChatMessage[]): Prom
       })),
     });
 
-    const content = completion.content[0];
-    // Check if the content has text property
-    const textContent = 'text' in content ? content.text : JSON.stringify(content);
+    let textContent = "";
+    try {
+      const content = completion.content[0];
+      if (content.type === "text") {
+        textContent = content.text;
+      } else {
+        textContent = JSON.stringify(content);
+      }
+    } catch (err) {
+      textContent = "Could not parse response content";
+    }
 
     return {
       success: true,
