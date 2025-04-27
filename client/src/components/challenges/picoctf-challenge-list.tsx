@@ -95,7 +95,7 @@ export default function PicoCTFChallengeList() {
   const [searchQuery, setSearchQuery] = useState("");
 
   // Query to fetch PicoCTF challenges
-  const { data: challenges, isLoading, error } = useQuery({
+  const { data: challenges = [], isLoading, error } = useQuery<PicoCTFChallenge[]>({
     queryKey: ['/api/picoctf/challenges'],
     enabled: !!user
   });
