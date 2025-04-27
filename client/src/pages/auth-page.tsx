@@ -43,6 +43,7 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export default function AuthPage() {
   const { loginMutation, registerMutation, user } = useAuth();
+  const { toast } = useToast();
   const [activeRole, setActiveRole] = useState<string>("user");
   
   // Initialize forms
@@ -61,12 +62,18 @@ export default function AuthPage() {
       email: "",
       password: "",
       role: "user",
+      adminCode: "",
     },
   });
   
   // Update role in register form when user selects a role button
   useEffect(() => {
     registerForm.setValue("role", activeRole as any);
+    
+    // Clear admin code if not admin role
+    if (activeRole !== "admin") {
+      registerForm.setValue("adminCode", "");
+    }
   }, [activeRole, registerForm]);
   
   // Handle form submissions
@@ -75,7 +82,27 @@ export default function AuthPage() {
   };
   
   const onRegisterSubmit = (data: RegisterFormValues) => {
-    registerMutation.mutate(data);
+    // Validate admin code if role is admin
+    if (data.role === "admin" && (!data.adminCode || data.adminCode.trim() === "")) {
+      toast({
+        title: "Admin Code Required",
+        description: "Please enter the admin secret code to register as an admin",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    registerMutation.mutate(data, {
+      onError: (error: any) => {
+        if (error.message === "Invalid admin code") {
+          toast({
+            title: "Invalid Admin Code",
+            description: "The admin code you entered is incorrect",
+            variant: "destructive"
+          });
+        }
+      }
+    });
   };
   
   // If user is already logged in, redirect to dashboard
@@ -274,6 +301,33 @@ export default function AuthPage() {
                           </FormItem>
                         )}
                       />
+                      
+                      {/* Admin Code Field - only shown when Admin role is selected */}
+                      {activeRole === "admin" && (
+                        <FormField
+                          control={registerForm.control}
+                          name="adminCode"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>
+                                <div className="flex items-center">
+                                  Admin Code
+                                  <span className="ml-2 text-yellow-500">
+                                    <AlertCircle size={16} />
+                                  </span>
+                                </div>
+                              </FormLabel>
+                              <FormControl>
+                                <Input placeholder="Enter admin secret code" {...field} />
+                              </FormControl>
+                              <p className="text-xs text-muted-foreground">
+                                Required for admin registration
+                              </p>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      )}
                       
                       <Button 
                         type="submit" 

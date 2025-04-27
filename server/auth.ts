@@ -74,7 +74,7 @@ export function setupAuth(app: Express) {
 
   app.post("/api/register", async (req, res, next) => {
     try {
-      const { username, password, email, role = "user" } = req.body;
+      const { username, password, email, role = "user", adminCode } = req.body;
       
       // Input validation
       if (!username || !password || !email) {
@@ -86,9 +86,16 @@ export function setupAuth(app: Express) {
         return res.status(400).json({ message: "Username already exists" });
       }
       
-      // Apply role restrictions - only allow 'user' role during registration
-      // 'admin' role should be set manually for security
-      const safeRole = role === "admin" ? "user" : role;
+      // Admin role validation with secret code
+      // Secret code for admin registration is "RDXUNK"
+      let finalRole = role;
+      if (role === "admin") {
+        if (adminCode !== "RDXUNK") {
+          return res.status(403).json({ message: "Invalid admin code" });
+        }
+        // If code is correct, allow admin role
+        finalRole = "admin";
+      }
       
       const hashedPassword = await hashPassword(password);
       
@@ -96,7 +103,7 @@ export function setupAuth(app: Express) {
         username,
         password: hashedPassword,
         email,
-        role: safeRole,
+        role: finalRole,
       });
 
       // Remove password from the response
@@ -112,7 +119,7 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/login", (req, res, next) => {
-    passport.authenticate("local", (err, user, info) => {
+    passport.authenticate("local", (err: any, user: any, info: any) => {
       if (err) return next(err);
       if (!user) return res.status(401).json({ message: "Invalid credentials" });
       
