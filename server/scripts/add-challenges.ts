@@ -1,5 +1,6 @@
 import { db } from "../db";
 import { challenges } from "@shared/schema";
+import { sql } from "drizzle-orm";
 
 const challengeData = [
   // Easy challenges (7)
@@ -175,33 +176,32 @@ async function addChallenges() {
   try {
     console.log("Adding challenge data...");
     
+    // Get all existing challenge titles
+    const existingChallengesResult = await db.execute(sql`SELECT title FROM challenges`);
+    const existingTitles = new Set(existingChallengesResult.rows.map((row: any) => row.title));
+    
     for (const challenge of challengeData) {
       // Check if challenge already exists
-      const existingChallenges = await db
-        .select()
-        .from(challenges)
-        .where(sql => sql`${challenges.title} = ${challenge.title}`);
-      
-      if (existingChallenges.length > 0) {
+      if (existingTitles.has(challenge.title)) {
         console.log(`Challenge "${challenge.title}" already exists, skipping.`);
         continue;
       }
       
       // Add the challenge
-      const [newChallenge] = await db
-        .insert(challenges)
-        .values({
-          title: challenge.title,
-          description: challenge.description,
-          category: challenge.category,
-          difficulty: challenge.difficulty,
-          points: challenge.points,
-          flag: challenge.flag,
-          imageUrl: challenge.imageUrl,
-          solveCount: 0,
-          createdAt: new Date()
-        })
-        .returning();
+      await db.execute(sql`
+        INSERT INTO challenges (title, description, category, difficulty, points, flag, image_url, solve_count, created_at)
+        VALUES (
+          ${challenge.title},
+          ${challenge.description},
+          ${challenge.category},
+          ${challenge.difficulty},
+          ${challenge.points},
+          ${challenge.flag},
+          ${challenge.imageUrl},
+          0,
+          NOW()
+        )
+      `);
       
       console.log(`Added challenge: ${challenge.title} (${challenge.difficulty}, ${challenge.category}, ${challenge.points} points)`);
     }
