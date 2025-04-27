@@ -125,6 +125,63 @@ export const insertChatHistorySchema = createInsertSchema(chatHistory).pick({
   title: true,
 });
 
+// Contest schema
+export const contests = pgTable("contests", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  externalUrl: text("external_url"),
+  isExternal: boolean("is_external").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertContestSchema = createInsertSchema(contests).pick({
+  title: true,
+  description: true,
+  startDate: true,
+  endDate: true,
+  externalUrl: true,
+  isExternal: true
+});
+
+// Contest challenges schema
+export const contestChallenges = pgTable("contest_challenges", {
+  id: serial("id").primaryKey(),
+  contestId: integer("contest_id").notNull(),
+  challengeId: integer("challenge_id").notNull(),
+});
+
+export const insertContestChallengeSchema = createInsertSchema(contestChallenges).pick({
+  contestId: true,
+  challengeId: true
+});
+
+// External flag submissions
+export const externalFlagSubmissions = pgTable("external_flag_submissions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  contestId: integer("contest_id").notNull(),
+  challengeName: text("challenge_name").notNull(),
+  description: text("description"),
+  points: integer("points").notNull(),
+  flag: text("flag").notNull(),
+  status: text("status").notNull().default("pending"), // pending, approved, rejected
+  reviewedBy: integer("reviewed_by"),
+  reviewedAt: timestamp("reviewed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertExternalFlagSubmissionSchema = createInsertSchema(externalFlagSubmissions).pick({
+  userId: true,
+  contestId: true,
+  challengeName: true,
+  description: true,
+  points: true,
+  flag: true,
+});
+
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -146,3 +203,12 @@ export type ChatbotKey = typeof chatbotKeys.$inferSelect;
 
 export type InsertChatHistory = z.infer<typeof insertChatHistorySchema>;
 export type ChatHistory = typeof chatHistory.$inferSelect;
+
+export type InsertContest = z.infer<typeof insertContestSchema>;
+export type Contest = typeof contests.$inferSelect;
+
+export type InsertContestChallenge = z.infer<typeof insertContestChallengeSchema>;
+export type ContestChallenge = typeof contestChallenges.$inferSelect;
+
+export type InsertExternalFlagSubmission = z.infer<typeof insertExternalFlagSubmissionSchema>;
+export type ExternalFlagSubmission = typeof externalFlagSubmissions.$inferSelect;

@@ -247,7 +247,7 @@ export function setupChallengeRoutes(app: Express) {
       await storage.completeChallenge({
         userId,
         challengeId,
-        submittedAt: new Date()
+        pointsAwarded: challenge.points
       });
       
       // Update user's score
@@ -286,8 +286,12 @@ export function setupChallengeRoutes(app: Express) {
           // Create the challenge
           const newChallenge = await storage.createChallenge(challenge);
           results.push({ title: challenge.title, status: "created", id: newChallenge.id });
-        } catch (error) {
-          results.push({ title: challenge.title, status: "error", message: error.message });
+        } catch (error: any) {
+          results.push({ 
+            title: challenge.title, 
+            status: "error", 
+            message: error.message || "Unknown error occurred" 
+          });
         }
       }
       

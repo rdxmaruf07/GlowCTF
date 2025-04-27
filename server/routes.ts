@@ -10,6 +10,8 @@ import {
   generateAnthropicCompletion, 
   initializeAIClients 
 } from "./services/chatbot";
+import { setupChallengeRoutes } from "./routes/challenge-routes";
+import { setupContestRoutes } from "./routes/contest-routes";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication routes
@@ -20,6 +22,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Initialize AI clients with keys from database
   await initializeAIClients();
+  
+  // Set up challenge and contest routes
+  setupChallengeRoutes(app);
+  setupContestRoutes(app);
   
   // Challenges endpoints
   app.get("/api/challenges", async (req, res) => {
