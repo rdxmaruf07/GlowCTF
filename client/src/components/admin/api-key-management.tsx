@@ -53,12 +53,12 @@ export default function APIKeyManagement() {
       const anthropicKeyData = apiKeys.find((key: APIKey) => key.provider === "anthropic");
       
       if (openAIKeyData) {
-        setOpenAIKey(openAIKeyData.key);
+        setOpenAIKey(openAIKeyData.apiKey);
         setOpenAIActive(openAIKeyData.isActive);
       }
       
       if (anthropicKeyData) {
-        setAnthropicKey(anthropicKeyData.key);
+        setAnthropicKey(anthropicKeyData.apiKey);
         setAnthropicActive(anthropicKeyData.isActive);
       }
     }
@@ -67,7 +67,13 @@ export default function APIKeyManagement() {
   // Update API key mutation
   const updateKeyMutation = useMutation({
     mutationFn: async (data: { provider: string; key: string; isActive: boolean }) => {
-      const res = await apiRequest("PUT", "/api/admin/api-keys", data);
+      // We'll still accept key in the frontend but send it as apiKey to the server
+      const requestData = {
+        provider: data.provider,
+        apiKey: data.key,
+        isActive: data.isActive
+      };
+      const res = await apiRequest("PUT", "/api/admin/api-keys", requestData);
       return res.json();
     },
     onSuccess: () => {
@@ -81,6 +87,28 @@ export default function APIKeyManagement() {
       toast({
         title: "Error Updating API Key",
         description: error.message || "Failed to update API key. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Toggle API key active status mutation
+  const toggleKeyMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest("PATCH", `/api/admin/api-keys/${id}/toggle`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/api-keys"] });
+      toast({
+        title: "API Key Status Updated",
+        description: "The API key status has been successfully toggled.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error Updating API Key Status",
+        description: error.message || "Failed to update API key status. Please try again.",
         variant: "destructive",
       });
     },
@@ -143,6 +171,10 @@ export default function APIKeyManagement() {
       isActive: anthropicActive,
     });
   };
+  
+  const handleToggleStatus = (id: number) => {
+    toggleKeyMutation.mutate(id);
+  };
 
   const handleDelete = (id: number) => {
     setConfirmDeleteId(id);
@@ -204,9 +236,18 @@ export default function APIKeyManagement() {
               <Switch 
                 id="openai-active" 
                 checked={openAIActive}
-                onCheckedChange={setOpenAIActive}
+                onCheckedChange={(checked) => {
+                  setOpenAIActive(checked);
+                  const openAIKeyData = apiKeys?.find((key: APIKey) => key.provider === "openai");
+                  if (openAIKeyData) {
+                    handleToggleStatus(openAIKeyData.id);
+                  }
+                }}
+                disabled={toggleKeyMutation.isPending}
               />
-              <Label htmlFor="openai-active">Enable OpenAI (GPT)</Label>
+              <Label htmlFor="openai-active">
+                {openAIActive ? "OpenAI (GPT) Enabled" : "OpenAI (GPT) Disabled"}
+              </Label>
             </div>
             
             <div className="pt-4">
@@ -252,9 +293,18 @@ export default function APIKeyManagement() {
               <Switch 
                 id="anthropic-active" 
                 checked={anthropicActive}
-                onCheckedChange={setAnthropicActive}
+                onCheckedChange={(checked) => {
+                  setAnthropicActive(checked);
+                  const anthropicKeyData = apiKeys?.find((key: APIKey) => key.provider === "anthropic");
+                  if (anthropicKeyData) {
+                    handleToggleStatus(anthropicKeyData.id);
+                  }
+                }}
+                disabled={toggleKeyMutation.isPending}
               />
-              <Label htmlFor="anthropic-active">Enable Anthropic (Claude)</Label>
+              <Label htmlFor="anthropic-active">
+                {anthropicActive ? "Anthropic (Claude) Enabled" : "Anthropic (Claude) Disabled"}
+              </Label>
             </div>
             
             <div className="pt-4">

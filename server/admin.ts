@@ -57,10 +57,10 @@ export function setupAdminRoutes(app: Express) {
   // Update API key
   app.put("/api/admin/api-keys", isAdmin, async (req, res, next) => {
     try {
-      const { provider, key, isActive } = req.body;
+      const { provider, apiKey, isActive } = req.body;
       
-      if (!provider || !key) {
-        return res.status(400).json({ message: "Provider and key are required" });
+      if (!provider || !apiKey) {
+        return res.status(400).json({ message: "Provider and apiKey are required" });
       }
       
       // Check if the key for this provider already exists
@@ -71,7 +71,7 @@ export function setupAdminRoutes(app: Express) {
       if (existingKey) {
         // Update existing key
         result = await storage.updateChatbotKey(existingKey.id, {
-          apiKey: key,
+          apiKey: apiKey,
           isActive: isActive ?? true
         });
       } else {
@@ -83,7 +83,7 @@ export function setupAdminRoutes(app: Express) {
         result = await storage.saveChatbotKey({
           userId: req.user.id,
           provider,
-          apiKey: key,
+          apiKey: apiKey,
           isActive: isActive ?? true
         });
       }
