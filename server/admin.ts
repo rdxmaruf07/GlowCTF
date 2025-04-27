@@ -1,5 +1,18 @@
 import { Express, Request, Response, NextFunction } from "express";
 import { storage } from "./storage";
+import { User } from "@shared/schema";
+import { initializeAIClients } from "./services/chatbot";
+
+// Add type definitions for Express
+declare global {
+  namespace Express {
+    interface User {
+      id: number;
+      username: string;
+      role: string;
+    }
+  }
+}
 
 // Middleware to check if user is admin
 export function isAdmin(req: Request, res: Response, next: NextFunction) {
@@ -63,6 +76,10 @@ export function setupAdminRoutes(app: Express) {
         });
       } else {
         // Create new key
+        if (!req.user || !req.user.id) {
+          return res.status(401).json({ message: "Unauthorized" });
+        }
+        
         result = await storage.saveChatbotKey({
           userId: req.user.id,
           provider,

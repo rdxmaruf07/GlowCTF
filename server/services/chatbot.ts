@@ -1,15 +1,43 @@
 import { OpenAI } from "openai";
 import Anthropic from "@anthropic-ai/sdk";
+import { storage } from "../storage";
 
-// Initialize OpenAI client with the API key
-export const openai = new OpenAI({ 
-  apiKey: process.env.OPENAI_API_KEY
-});
+// We will create dynamic instances of these clients based on the keys in the database
+let openai: OpenAI;
+let anthropic: Anthropic;
 
-// Initialize Anthropic client with the API key
-export const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY
-});
+// Function to initialize the AI clients with API keys from the database
+export async function initializeAIClients() {
+  try {
+    // Get OpenAI key
+    const openaiKey = await storage.getChatbotKeyByProvider("openai");
+    if (openaiKey && openaiKey.isActive) {
+      openai = new OpenAI({ apiKey: openaiKey.key });
+      console.log("OpenAI client initialized with key from database");
+    } else {
+      // Fallback to environment variable
+      openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+      console.log("OpenAI client initialized with key from environment variable");
+    }
+
+    // Get Anthropic key
+    const anthropicKey = await storage.getChatbotKeyByProvider("anthropic");
+    if (anthropicKey && anthropicKey.isActive) {
+      anthropic = new Anthropic({ apiKey: anthropicKey.key });
+      console.log("Anthropic client initialized with key from database");
+    } else {
+      // Fallback to environment variable
+      anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+      console.log("Anthropic client initialized with key from environment variable");
+    }
+  } catch (error) {
+    console.error("Error initializing AI clients:", error);
+    
+    // Initialize with environment variables as fallback
+    openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  }
+}
 
 export interface ChatMessage {
   role: string;

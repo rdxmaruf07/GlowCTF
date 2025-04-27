@@ -1,14 +1,25 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
+import { setupAdminRoutes } from "./admin";
 import { storage } from "./storage";
 import axios from "axios";
 import { insertChallengeSchema } from "@shared/schema";
-import { generateOpenAICompletion, generateAnthropicCompletion } from "./services/chatbot";
+import { 
+  generateOpenAICompletion, 
+  generateAnthropicCompletion, 
+  initializeAIClients 
+} from "./services/chatbot";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication routes
   setupAuth(app);
+  
+  // Set up admin routes
+  setupAdminRoutes(app);
+  
+  // Initialize AI clients with keys from database
+  await initializeAIClients();
   
   // Challenges endpoints
   app.get("/api/challenges", async (req, res) => {
@@ -142,11 +153,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
-      const { provider, apiKey } = req.body;
+      const { provider, key } = req.body;
       const chatbotKey = await storage.saveChatbotKey({
         userId: req.user.id,
         provider,
-        apiKey
+        key,
+        isActive: true
       });
       
       res.status(201).json({ 
