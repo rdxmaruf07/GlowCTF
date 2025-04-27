@@ -5,7 +5,10 @@ import {
   badges, type Badge, type InsertBadge,
   userBadges, type UserBadge, type InsertUserBadge,
   chatbotKeys, type ChatbotKey, type InsertChatbotKey,
-  chatHistory, type ChatHistory, type InsertChatHistory
+  chatHistory, type ChatHistory, type InsertChatHistory,
+  contests, type Contest, type InsertContest,
+  contestChallenges, type ContestChallenge, type InsertContestChallenge,
+  externalFlagSubmissions, type ExternalFlagSubmission, type InsertExternalFlagSubmission
 } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
@@ -74,6 +77,24 @@ export interface IStorage {
   
   // Leaderboard methods
   getLeaderboard(): Promise<LeaderboardEntry[]>;
+  
+  // Contest methods
+  getAllContests(): Promise<Contest[]>;
+  getContestById(id: number): Promise<Contest | undefined>;
+  createContest(contest: InsertContest): Promise<Contest>;
+  updateContest(id: number, data: Partial<InsertContest>): Promise<Contest>;
+  deleteContest(id: number): Promise<void>;
+  
+  // Contest challenges methods
+  addChallengeToContest(data: InsertContestChallenge): Promise<ContestChallenge>;
+  removeChallengeFromContest(contestId: number, challengeId: number): Promise<void>;
+  getContestChallenges(contestId: number): Promise<Challenge[]>;
+  
+  // External flag submission methods
+  submitExternalFlag(data: InsertExternalFlagSubmission): Promise<ExternalFlagSubmission>;
+  getExternalFlagSubmissions(contestId: number): Promise<ExternalFlagSubmission[]>;
+  getUserExternalFlagSubmissions(userId: number): Promise<ExternalFlagSubmission[]>;
+  reviewExternalFlagSubmission(id: number, reviewerId: number, status: string): Promise<ExternalFlagSubmission>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -337,6 +358,149 @@ export class DatabaseStorage implements IStorage {
     }
     
     return leaderboard;
+  }
+  
+  // Contest methods
+  async getAllContests(): Promise<Contest[]> {
+    return await db.select().from(contests);
+  }
+  
+  async getContestById(id: number): Promise<Contest | undefined> {
+    const [contest] = await db.select().from(contests).where(eq(contests.id, id));
+    return contest || undefined;
+  }
+  
+  async createContest(insertContest: InsertContest): Promise<Contest> {
+    const [contest] = await db.insert(contests).values(insertContest).returning();
+    return contest;
+  }
+  
+  async updateContest(id: number, data: Partial<InsertContest>): Promise<Contest> {
+    const [contest] = await db
+      .update(contests)
+      .set(data)
+      .where(eq(contests.id, id))
+      .returning();
+      
+    if (!contest) throw new Error("Contest not found");
+    return contest;
+  }
+  
+  async deleteContest(id: number): Promise<void> {
+    // First delete all contest-challenge associations
+    await db
+      .delete(contestChallenges)
+      .where(eq(contestChallenges.contestId, id));
+    
+    // Then delete the contest
+    await db
+      .delete(contests)
+      .where(eq(contests.id, id));
+  }
+  
+  // Contest challenges methods
+  async addChallengeToContest(data: InsertContestChallenge): Promise<ContestChallenge> {
+    // Check if already exists
+    const [existing] = await db
+      .select()
+      .from(contestChallenges)
+      .where(
+        and(
+          eq(contestChallenges.contestId, data.contestId),
+          eq(contestChallenges.challengeId, data.challengeId)
+        )
+      );
+    
+    if (existing) {
+      return existing;
+    }
+    
+    const [contestChallenge] = await db
+      .insert(contestChallenges)
+      .values(data)
+      .returning();
+      
+    return contestChallenge;
+  }
+  
+  async removeChallengeFromContest(contestId: number, challengeId: number): Promise<void> {
+    await db
+      .delete(contestChallenges)
+      .where(
+        and(
+          eq(contestChallenges.contestId, contestId),
+          eq(contestChallenges.challengeId, challengeId)
+        )
+      );
+  }
+  
+  async getContestChallenges(contestId: number): Promise<Challenge[]> {
+    const contestChallengeEntries = await db
+      .select({
+        challengeId: contestChallenges.challengeId
+      })
+      .from(contestChallenges)
+      .where(eq(contestChallenges.contestId, contestId));
+    
+    if (contestChallengeEntries.length === 0) {
+      return [];
+    }
+    
+    const challengeIds = contestChallengeEntries.map(c => c.challengeId);
+    
+    return await db
+      .select()
+      .from(challenges)
+      .where(sql`${challenges.id} IN (${challengeIds.join(',')})`);
+  }
+  
+  // External flag submission methods
+  async submitExternalFlag(data: InsertExternalFlagSubmission): Promise<ExternalFlagSubmission> {
+    const [submission] = await db
+      .insert(externalFlagSubmissions)
+      .values(data)
+      .returning();
+      
+    return submission;
+  }
+  
+  async getExternalFlagSubmissions(contestId: number): Promise<ExternalFlagSubmission[]> {
+    return await db
+      .select()
+      .from(externalFlagSubmissions)
+      .where(eq(externalFlagSubmissions.contestId, contestId))
+      .orderBy(desc(externalFlagSubmissions.createdAt));
+  }
+  
+  async getUserExternalFlagSubmissions(userId: number): Promise<ExternalFlagSubmission[]> {
+    return await db
+      .select()
+      .from(externalFlagSubmissions)
+      .where(eq(externalFlagSubmissions.userId, userId))
+      .orderBy(desc(externalFlagSubmissions.createdAt));
+  }
+  
+  async reviewExternalFlagSubmission(id: number, reviewerId: number, status: string): Promise<ExternalFlagSubmission> {
+    const [submission] = await db
+      .update(externalFlagSubmissions)
+      .set({
+        status,
+        reviewedBy: reviewerId,
+        reviewedAt: new Date()
+      })
+      .where(eq(externalFlagSubmissions.id, id))
+      .returning();
+      
+    if (!submission) {
+      throw new Error("Flag submission not found");
+    }
+    
+    // If approved, award points to the user
+    if (status === "approved") {
+      await this.updateUserScore(submission.userId, submission.points);
+    }
+    
+    return submission;
   }
 }
 

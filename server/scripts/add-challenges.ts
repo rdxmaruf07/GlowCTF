@@ -1,209 +1,218 @@
 import { db } from "../db";
 import { challenges } from "@shared/schema";
-import { eq, sql } from "drizzle-orm";
 
-// Array of 18 platform challenges (7 easy, 5 medium, 6 hard)
-const platformChallenges = [
-  // EASY CHALLENGES (7)
+const challengeData = [
+  // Easy challenges (7)
   {
-    title: "Cookie Monster",
-    description: "This website stores sensitive information in cookies. Inspect the browser cookies to find the flag.",
+    title: "Welcome Hacker",
+    description: "Find the flag hidden in the HTML source code of the home page.",
+    category: "Web",
     difficulty: "easy",
-    category: "web",
     points: 100,
-    flag: "flag{cookies_are_not_secure_storage}",
-    imageUrl: "https://i.imgur.com/XkuVxKh.png"
+    flag: "flag{welcome_to_glowctf_arena}",
+    imageUrl: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5"
   },
   {
     title: "Base64 Basics",
-    description: "Decode this base64 string to get the flag: ZmxhZ3tiYXNlNjRfaXNfbm90X2VuY3J5cHRpb259",
+    description: "Decode this Base64 string to find the flag: ZmxhZ3tiYXNlNjRfaXNfbm90X2VuY3J5cHRpb259",
+    category: "Cryptography",
     difficulty: "easy",
-    category: "crypto",
-    points: 50,
-    flag: "flag{base64_is_not_encryption}",
-    imageUrl: "https://i.imgur.com/YK3yXsZ.png"
-  },
-  {
-    title: "Hidden in Plain Sight",
-    description: "The flag is hidden in the HTML source code of this website. View the source to find it!",
-    difficulty: "easy",
-    category: "web",
-    points: 75,
-    flag: "flag{source_code_reveals_secrets}",
-    imageUrl: "https://i.imgur.com/IaLkNOu.png"
-  },
-  {
-    title: "Terminal Basics",
-    description: "Use the 'ls -la' command to find a hidden file, then use 'cat' to read its contents.",
-    difficulty: "easy",
-    category: "linux",
     points: 100,
-    flag: "flag{hidden_files_revealed}",
-    imageUrl: "https://i.imgur.com/wST09XM.png"
+    flag: "flag{base64_is_not_encryption}",
+    imageUrl: "https://images.unsplash.com/photo-1526378800651-c32d170fe6f8"
   },
   {
-    title: "Simple XSS",
-    description: "Inject a simple alert script into the input field to trigger an XSS vulnerability.",
+    title: "HTTP Headers",
+    description: "Find the flag hidden in the HTTP response headers.",
+    category: "Web",
     difficulty: "easy",
-    category: "web",
     points: 150,
-    flag: "flag{alert_1_xss_success}",
-    imageUrl: "https://i.imgur.com/lYdKuE4.png"
+    flag: "flag{headers_tell_all}",
+    imageUrl: "https://images.unsplash.com/photo-1555066931-4365d14bab8c"
   },
   {
-    title: "Password Policy",
-    description: "Analyze this password policy and find the weakness: 'Must be exactly 8 lowercase letters'.",
+    title: "Inspect Element",
+    description: "Use your browser's developer tools to find a hidden element with the flag.",
+    category: "Web",
     difficulty: "easy",
-    category: "security",
-    points: 125,
-    flag: "flag{entropy_matters_more_than_rules}",
-    imageUrl: "https://i.imgur.com/yROUN8I.png"
+    points: 100,
+    flag: "flag{inspector_gadget}",
+    imageUrl: "https://images.unsplash.com/photo-1605379399642-870262d3d051"
+  },
+  {
+    title: "Caesar's Secret",
+    description: "Decode this Caesar cipher to find the flag: iodj{urwdwlrqbflskhuv_duh_fodvvlf}",
+    category: "Cryptography",
+    difficulty: "easy",
+    points: 150,
+    flag: "flag{rotation_ciphers_are_classic}",
+    imageUrl: "https://images.unsplash.com/photo-1533630757306-cbadb934bcb1"
+  },
+  {
+    title: "Cookie Monster",
+    description: "Find the flag stored in a browser cookie.",
+    category: "Web",
+    difficulty: "easy",
+    points: 200,
+    flag: "flag{cookies_are_tasty_and_useful}",
+    imageUrl: "https://images.unsplash.com/photo-1499636136210-6f4ee915583e"
+  },
+  {
+    title: "String Search",
+    description: "Download the text file and find the hidden flag among thousands of random strings.",
+    category: "Forensics",
+    difficulty: "easy",
+    points: 200,
+    flag: "flag{needle_in_a_haystack}",
+    imageUrl: "https://images.unsplash.com/photo-1555532538-dcdbd01d373d"
+  },
+  
+  // Medium challenges (5)
+  {
+    title: "SQL Injection 101",
+    description: "The login form is vulnerable to SQL injection. Can you bypass it?",
+    category: "Web",
+    difficulty: "medium",
+    points: 300,
+    flag: "flag{bobby_tables_says_hi}",
+    imageUrl: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31"
+  },
+  {
+    title: "XOR Encoding",
+    description: "The flag has been XOR encoded with the key 'CTF'. Decode it: 021D11041D04070E1C51010B10440159071102095A",
+    category: "Cryptography",
+    difficulty: "medium",
+    points: 350,
+    flag: "flag{xor_is_reversible}",
+    imageUrl: "https://images.unsplash.com/photo-1580894912989-0bc892f4efd0"
+  },
+  {
+    title: "Broken Authentication",
+    description: "The reset password functionality has a vulnerability. Can you exploit it to gain access?",
+    category: "Web",
+    difficulty: "medium",
+    points: 400,
+    flag: "flag{reset_tokens_matter}",
+    imageUrl: "https://images.unsplash.com/photo-1528845922818-cc5462be9f8e"
   },
   {
     title: "Metadata Extraction",
     description: "Download the image and extract its metadata to find the hidden flag.",
-    difficulty: "easy",
-    category: "forensics",
-    points: 150,
-    flag: "flag{exif_data_leaks_info}",
-    imageUrl: "https://i.imgur.com/rMXapvG.png"
-  },
-
-  // MEDIUM CHALLENGES (5)
-  {
-    title: "SQL Injection 101",
-    description: "The login form is vulnerable to SQL injection. Find a way to bypass authentication.",
+    category: "Forensics",
     difficulty: "medium",
-    category: "web",
-    points: 250,
-    flag: "flag{sql_injection_bypassed_auth}",
-    imageUrl: "https://i.imgur.com/3wBj8QJ.png"
-  },
-  {
-    title: "Broken Authentication",
-    description: "The password reset functionality has a logic flaw. Find a way to reset anyone's password.",
-    difficulty: "medium",
-    category: "web",
-    points: 300,
-    flag: "flag{predictable_tokens_are_bad}",
-    imageUrl: "https://i.imgur.com/eBQyMFW.png"
-  },
-  {
-    title: "Caesar's Secret",
-    description: "Decrypt this message encrypted with a Caesar cipher: 'iodj{urwdwlrq_flskhuv_duh_zhdn}'",
-    difficulty: "medium",
-    category: "crypto",
-    points: 200,
-    flag: "flag{rotation_ciphers_are_weak}",
-    imageUrl: "https://i.imgur.com/7dJiQWu.png"
-  },
-  {
-    title: "Network Packet Analysis",
-    description: "Analyze the provided pcap file to find the exfiltrated data.",
-    difficulty: "medium",
-    category: "forensics",
     points: 350,
-    flag: "flag{wireshark_reveals_all}",
-    imageUrl: "https://i.imgur.com/o8Hc3h6.png"
+    flag: "flag{exif_data_exposed}",
+    imageUrl: "https://images.unsplash.com/photo-1507457379470-08b800bebc67"
   },
   {
-    title: "Command Injection",
-    description: "The ping utility on this web application is vulnerable to command injection. Execute commands to find the flag.",
+    title: "Reverse Engineering Basics",
+    description: "Download the binary file and reverse engineer it to find the flag.",
+    category: "Reverse Engineering",
     difficulty: "medium",
-    category: "web",
-    points: 300,
-    flag: "flag{sanitize_user_input_always}",
-    imageUrl: "https://i.imgur.com/nJO6e5T.png"
+    points: 450,
+    flag: "flag{static_analysis_works}",
+    imageUrl: "https://images.unsplash.com/photo-1507721999472-8ed4421c4af2"
   },
-
-  // HARD CHALLENGES (6)
+  
+  // Hard challenges (6)
   {
     title: "Advanced Buffer Overflow",
-    description: "Exploit the buffer overflow vulnerability in this binary to get a shell.",
+    description: "Exploit a buffer overflow vulnerability in the provided service to get the flag.",
+    category: "Binary Exploitation",
     difficulty: "hard",
-    category: "binary",
     points: 500,
     flag: "flag{stack_smashing_detected}",
-    imageUrl: "https://i.imgur.com/5PRJOsE.png"
+    imageUrl: "https://images.unsplash.com/photo-1550439062-609e1531270e"
   },
   {
-    title: "Reverse Engineering",
-    description: "Decompile this binary and figure out the correct input to get the flag.",
+    title: "Secure Shell",
+    description: "Find a way to bypass the SSH authentication to access the server.",
+    category: "Network",
     difficulty: "hard",
-    category: "binary",
-    points: 450,
-    flag: "flag{static_analysis_for_the_win}",
-    imageUrl: "https://i.imgur.com/UG17WQq.png"
+    points: 550,
+    flag: "flag{private_key_extraction}",
+    imageUrl: "https://images.unsplash.com/photo-1544197150-b99a580bb7a8"
   },
   {
-    title: "JWT Token Manipulation",
-    description: "The API uses JWT tokens for authentication. Find and exploit the vulnerability in the token verification.",
+    title: "Rootkit Detection",
+    description: "Analyze the provided system image to detect and identify the rootkit.",
+    category: "Forensics",
     difficulty: "hard",
-    category: "web",
-    points: 400,
-    flag: "flag{alg_none_attack_successful}",
-    imageUrl: "https://i.imgur.com/VO554TA.png"
+    points: 600,
+    flag: "flag{hidden_in_plain_sight}",
+    imageUrl: "https://images.unsplash.com/photo-1562690868-60bbe7293e94"
   },
   {
-    title: "RSA Decryption Challenge",
-    description: "You have the public key and a ciphertext. Find the vulnerability to decrypt the message.",
+    title: "Advanced Web Exploitation",
+    description: "Combine multiple vulnerabilities to achieve a complete takeover of the web application.",
+    category: "Web",
     difficulty: "hard",
-    category: "crypto",
-    points: 450,
-    flag: "flag{weak_exponents_break_rsa}",
-    imageUrl: "https://i.imgur.com/KvlAH3h.png"
+    points: 650,
+    flag: "flag{chain_of_vulnerabilities}",
+    imageUrl: "https://images.unsplash.com/photo-1563420565624-789e480ab8e7"
   },
   {
     title: "Memory Forensics",
-    description: "Analyze this memory dump to find evidence of the attacker's activity.",
+    description: "Analyze the memory dump to find evidence of the attack and retrieve the flag.",
+    category: "Forensics",
     difficulty: "hard",
-    category: "forensics",
-    points: 500,
-    flag: "flag{volatility_memory_analysis}",
-    imageUrl: "https://i.imgur.com/TY4L4RZ.png"
+    points: 700,
+    flag: "flag{volatile_memory_analysis}",
+    imageUrl: "https://images.unsplash.com/photo-1571786256017-aee7a0c009b6"
   },
   {
-    title: "Advanced Steganography",
-    description: "The flag is hidden in this image using advanced steganography techniques. Extract it!",
+    title: "Zero-Day Exploit",
+    description: "Find and exploit an unknown vulnerability in the custom service.",
+    category: "Binary Exploitation",
     difficulty: "hard",
-    category: "forensics",
-    points: 400,
-    flag: "flag{least_significant_bits}",
-    imageUrl: "https://i.imgur.com/PQXd2lV.png"
+    points: 750,
+    flag: "flag{day_zero_reached}",
+    imageUrl: "https://images.unsplash.com/photo-1515879218367-8466d910aaa4"
   }
 ];
 
-// Function to add challenges to the database
 async function addChallenges() {
-  console.log("Adding challenges to the database...");
-  
   try {
-    // Insert each challenge
-    for (const challenge of platformChallenges) {
-      const existingChallenge = await db.select({ 
-        count: sql`count(*)` 
-      })
-      .from(challenges)
-      .where(eq(challenges.title, challenge.title));
+    console.log("Adding challenge data...");
+    
+    for (const challenge of challengeData) {
+      // Check if challenge already exists
+      const existingChallenges = await db
+        .select()
+        .from(challenges)
+        .where(sql => sql`${challenges.title} = ${challenge.title}`);
       
-      const count = Number(existingChallenge[0].count);
-      
-      if (count === 0) {
-        const result = await db.insert(challenges).values(challenge).returning();
-        console.log(`Added challenge: ${challenge.title}`);
-      } else {
-        console.log(`Challenge already exists: ${challenge.title}`);
+      if (existingChallenges.length > 0) {
+        console.log(`Challenge "${challenge.title}" already exists, skipping.`);
+        continue;
       }
+      
+      // Add the challenge
+      const [newChallenge] = await db
+        .insert(challenges)
+        .values({
+          title: challenge.title,
+          description: challenge.description,
+          category: challenge.category,
+          difficulty: challenge.difficulty,
+          points: challenge.points,
+          flag: challenge.flag,
+          imageUrl: challenge.imageUrl,
+          solveCount: 0,
+          createdAt: new Date()
+        })
+        .returning();
+      
+      console.log(`Added challenge: ${challenge.title} (${challenge.difficulty}, ${challenge.category}, ${challenge.points} points)`);
     }
     
-    console.log("All challenges added successfully!");
+    console.log("Challenge data added successfully!");
   } catch (error) {
-    console.error("Error adding challenges:", error);
+    console.error("Error adding challenge data:", error);
   } finally {
-    // Close the database connection
     process.exit(0);
   }
 }
 
-// Execute the function
+// Run the function
 addChallenges();
