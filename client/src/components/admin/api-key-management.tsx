@@ -27,7 +27,7 @@ import {
 interface APIKey {
   id: number;
   provider: string;
-  key: string;
+  apiKey: string;
   isActive: boolean;
   createdAt: string;
 }

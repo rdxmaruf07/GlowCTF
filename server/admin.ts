@@ -1,7 +1,7 @@
 import { Express, Request, Response, NextFunction } from "express";
 import { storage } from "./storage";
-import { User } from "@shared/schema";
 import { initializeAIClients } from "./services/chatbot";
+import { User } from "@shared/schema";
 
 // Add type definitions for Express
 declare global {
@@ -88,6 +88,40 @@ export function setupAdminRoutes(app: Express) {
         });
       }
       
+      // Reinitialize AI clients after key changes
+      await initializeAIClients();
+      
+      res.json({ success: true, result });
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  // Toggle API key status (active/inactive)
+  app.patch("/api/admin/api-keys/:id/toggle", isAdmin, async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid ID" });
+      }
+      
+      // Get the current key
+      const apiKeys = await storage.getAllChatbotKeys();
+      const currentKey = apiKeys.find(key => key.id === id);
+      
+      if (!currentKey) {
+        return res.status(404).json({ message: "API key not found" });
+      }
+      
+      // Toggle active status
+      const result = await storage.updateChatbotKey(id, {
+        isActive: !currentKey.isActive
+      });
+      
+      // Reinitialize AI clients after changing active status
+      await initializeAIClients();
+      
       res.json({ success: true, result });
     } catch (error) {
       next(error);
@@ -104,6 +138,9 @@ export function setupAdminRoutes(app: Express) {
       }
       
       await storage.deleteChatbotKey(id);
+      
+      // Reinitialize AI clients after key deletion
+      await initializeAIClients();
       
       res.json({ success: true });
     } catch (error) {
