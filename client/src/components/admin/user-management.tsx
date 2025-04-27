@@ -37,17 +37,8 @@ export default function UserManagement() {
   const { data: users, isLoading, error } = useQuery({
     queryKey: ['/api/admin/users'],
     queryFn: async () => {
-      // This would normally hit the API
-      // Simulating a response for the demo
-      return [
-        { id: 1, username: "admin", email: "admin@glowctf.com", role: "admin", score: 4250, createdAt: "2023-04-15T10:30:00Z" },
-        { id: 2, username: "CyberPhantom", email: "cyber@example.com", role: "user", score: 5230, createdAt: "2023-05-20T14:22:00Z" },
-        { id: 3, username: "ByteWarrior", email: "byte@example.com", role: "user", score: 4850, createdAt: "2023-05-25T09:15:00Z" },
-        { id: 4, username: "HexCoder", email: "hex@example.com", role: "user", score: 4120, createdAt: "2023-06-10T16:45:00Z", isBanned: true },
-        { id: 5, username: "NeonShadow", email: "neon@example.com", role: "hacker", score: 3250, createdAt: "2023-06-15T11:30:00Z" },
-        { id: 6, username: "BinaryQueen", email: "binary@example.com", role: "user", score: 3620, createdAt: "2023-07-05T13:20:00Z" },
-        { id: 7, username: "CodeSlayer", email: "code@example.com", role: "hacker", score: 3470, createdAt: "2023-07-12T10:10:00Z" }
-      ];
+      const res = await apiRequest("GET", "/api/admin/users");
+      return res.json();
     }
   });
   
