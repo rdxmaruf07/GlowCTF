@@ -10,8 +10,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { LockKeyholeOpen, User, Code } from "lucide-react";
+import { LockKeyholeOpen, User, Code, AlertCircle } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
 
 // Form schemas
 const loginSchema = z.object({
@@ -34,6 +35,7 @@ const registerSchema = z.object({
     message: "Password must be at least 6 characters long",
   }),
   role: z.enum(["user", "admin", "hacker"]).default("user"),
+  adminCode: z.string().optional(),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
