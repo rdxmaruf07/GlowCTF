@@ -5,7 +5,7 @@ import { getInitials } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ShieldIcon, Menu, X } from "lucide-react";
+import { ShieldIcon, Menu, X, Users } from "lucide-react";
 
 // Navigation item props
 interface NavItemProps {
@@ -19,19 +19,21 @@ interface NavItemProps {
 // Navigation item component
 const NavItem = ({ href, label, icon, active, onClick }: NavItemProps) => {
   return (
-    <Link href={href}>
-      <a
-        className={`flex items-center px-4 py-3 rounded-md font-medium transition duration-200 ${
-          active 
-            ? "text-primary bg-background bg-opacity-50" 
-            : "text-muted-foreground hover:text-primary"
-        }`}
-        onClick={onClick}
-      >
-        {icon}
-        <span className="ml-3">{label}</span>
-      </a>
-    </Link>
+    <div className="w-full">
+      <Link href={href}>
+        <div
+          className={`flex items-center px-4 py-3 rounded-md font-medium transition duration-200 cursor-pointer ${
+            active 
+              ? "text-primary bg-background bg-opacity-50" 
+              : "text-muted-foreground hover:text-primary"
+          }`}
+          onClick={onClick}
+        >
+          {icon}
+          <span className="ml-3">{label}</span>
+        </div>
+      </Link>
+    </div>
   );
 };
 

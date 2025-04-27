@@ -206,7 +206,19 @@ export default function AuthPage() {
                           <input type="checkbox" id="remember" className="rounded bg-background border-border" />
                           <Label htmlFor="remember" className="text-sm text-muted-foreground">Remember me</Label>
                         </div>
-                        <a href="#" className="text-sm text-primary hover:underline">Forgot password?</a>
+                        <Button 
+                          variant="link" 
+                          className="text-sm text-primary p-0 h-auto"
+                          onClick={() => {
+                            toast({
+                              title: "Nice try, hacker!",
+                              description: "A real security expert would never forget their password. Maybe try some of those password cracking skills you've been learning?",
+                              variant: "destructive"
+                            });
+                          }}
+                        >
+                          Forgot password?
+                        </Button>
                       </div>
                       
                       <Button 
