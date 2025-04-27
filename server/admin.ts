@@ -28,6 +28,49 @@ export function isAdmin(req: Request, res: Response, next: NextFunction) {
 }
 
 export function setupAdminRoutes(app: Express) {
+  // Get all users (admin only)
+  app.get("/api/admin/users", isAdmin, async (req, res, next) => {
+    try {
+      // Get all users from the database
+      const allUsers = await storage.getAllUsers();
+      
+      // For each user, get their score
+      const usersWithDetails = await Promise.all(
+        allUsers.map(async (user) => {
+          const stats = await storage.getUserStats(user.id);
+          return {
+            ...user,
+            score: stats.totalPoints || 0,
+            isBanned: false, // Add appropriate field in the user schema if needed
+          };
+        })
+      );
+      
+      res.json(usersWithDetails);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  // Update user (ban/unban, change role, etc)
+  app.patch("/api/admin/users/:id", isAdmin, async (req, res, next) => {
+    try {
+      const userId = parseInt(req.params.id);
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      // For now, this is a placeholder. In a real implementation, you would 
+      // add methods to update user properties like ban status, role, etc.
+      // const { isBanned, role } = req.body;
+      
+      res.json({ success: true });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   // Get all API keys
   app.get("/api/admin/api-keys", isAdmin, async (req, res, next) => {
     try {

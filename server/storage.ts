@@ -45,6 +45,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUserScore(userId: number, points: number): Promise<User>;
   getUserStats(userId: number): Promise<UserStats>;
+  getAllUsers(): Promise<User[]>;
   
   // Challenge methods
   getAllChallenges(): Promise<Challenge[]>;
@@ -112,6 +113,10 @@ export class DatabaseStorage implements IStorage {
       .returning();
       
     return updatedUser;
+  }
+  
+  async getAllUsers(): Promise<User[]> {
+    return await db.select().from(users);
   }
   
   async getUserStats(userId: number): Promise<UserStats> {
