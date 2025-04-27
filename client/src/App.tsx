@@ -14,6 +14,7 @@ import LeaderboardPage from "@/pages/leaderboard-page";
 import ProfilePage from "@/pages/profile-page";
 import PracticePage from "@/pages/practice-page";
 import AdminPage from "@/pages/admin-page";
+import TeamPage from "@/pages/team-page";
 
 import { ProtectedRoute } from "./lib/protected-route";
 import { AuthProvider } from "./hooks/use-auth";
@@ -33,6 +34,7 @@ function Router() {
       <ProtectedRoute path="/profile" component={ProfilePage} />
       <ProtectedRoute path="/practice" component={PracticePage} />
       <ProtectedRoute path="/admin" component={AdminPage} />
+      <ProtectedRoute path="/team" component={TeamPage} />
       
       {/* Fallback to 404 */}
       <Route component={NotFound} />

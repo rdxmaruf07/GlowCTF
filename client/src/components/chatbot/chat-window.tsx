@@ -58,20 +58,26 @@ export default function ChatWindow({ provider, apiKeysAvailable = false }: ChatW
   // Chat completion mutation
   const chatCompletionMutation = useMutation({
     mutationFn: async (userMessage: string) => {
-      // This would normally call the AI API directly, but for this demo,
-      // we'll simulate a response via our own API that would handle the AI provider API call
-      const res = await apiRequest("POST", "/api/chatbot/history", {
+      // Create chat messages array with user's new message
+      const messageArray = [...messages, { role: 'user', content: userMessage }];
+      
+      // Make API call to our server for AI completion
+      const res = await apiRequest("POST", "/api/chatbot/completion", {
         provider: provider.id,
-        messages: [...messages, { role: 'user', content: userMessage }],
-        title: userMessage.substring(0, 30)
+        messages: messageArray.filter(msg => msg.role !== 'system') // Remove system messages for API
       });
       
-      // Return a simulated response
-      // In a real app, this would be the actual AI response
-      return {
-        role: 'assistant' as const,
-        content: simulateAIResponse(userMessage, provider.id)
-      };
+      const responseData = await res.json();
+      
+      // Save to chat history
+      await apiRequest("POST", "/api/chatbot/history", {
+        provider: provider.id,
+        messages: [...messageArray, responseData.message],
+        title: userMessage.substring(0, 30) + "..."
+      });
+      
+      // Return the actual AI response
+      return responseData.message;
     },
     onSuccess: (response) => {
       setMessages(prev => [...prev, response]);
@@ -79,8 +85,8 @@ export default function ChatWindow({ provider, apiKeysAvailable = false }: ChatW
     },
     onError: (error) => {
       toast({
-        title: "Error getting response",
-        description: error.message,
+        title: "Error getting AI response",
+        description: error.message || "Failed to generate completion. Please try again.",
         variant: "destructive"
       });
     }
