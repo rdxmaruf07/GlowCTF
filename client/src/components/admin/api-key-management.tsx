@@ -41,14 +41,14 @@ export default function APIKeyManagement() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
 
   // Fetch API keys
-  const { data: apiKeys, isLoading } = useQuery({
+  const { data: apiKeys, isLoading } = useQuery<APIKey[]>({
     queryKey: ["/api/admin/api-keys"],
     retry: false,
   });
 
   // Set form values when API keys are loaded
   useEffect(() => {
-    if (apiKeys) {
+    if (apiKeys && Array.isArray(apiKeys)) {
       const openAIKeyData = apiKeys.find((key: APIKey) => key.provider === "openai");
       const anthropicKeyData = apiKeys.find((key: APIKey) => key.provider === "anthropic");
       

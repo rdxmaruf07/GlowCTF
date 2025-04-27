@@ -64,6 +64,10 @@ export interface IStorage {
   // Chatbot methods
   saveChatbotKey(data: InsertChatbotKey): Promise<ChatbotKey>;
   getUserChatbotKeys(userId: number): Promise<ChatbotKey[]>;
+  getAllChatbotKeys(): Promise<ChatbotKey[]>;
+  getChatbotKeyByProvider(provider: string): Promise<ChatbotKey | undefined>;
+  updateChatbotKey(id: number, data: { key?: string; isActive?: boolean }): Promise<ChatbotKey>;
+  deleteChatbotKey(id: number): Promise<void>;
   saveChatHistory(data: InsertChatHistory): Promise<ChatHistory>;
   getUserChatHistory(userId: number): Promise<ChatHistory[]>;
   
@@ -249,6 +253,39 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(chatbotKeys)
       .where(eq(chatbotKeys.userId, userId));
+  }
+  
+  async getAllChatbotKeys(): Promise<ChatbotKey[]> {
+    return await db.select().from(chatbotKeys);
+  }
+  
+  async getChatbotKeyByProvider(provider: string): Promise<ChatbotKey | undefined> {
+    const [key] = await db.select().from(chatbotKeys).where(eq(chatbotKeys.provider, provider));
+    return key;
+  }
+  
+  async updateChatbotKey(id: number, data: { key?: string; isActive?: boolean }): Promise<ChatbotKey> {
+    const updateData: any = {};
+    
+    if (data.key !== undefined) {
+      updateData.key = data.key;
+    }
+    
+    if (data.isActive !== undefined) {
+      updateData.isActive = data.isActive;
+    }
+    
+    const [updated] = await db
+      .update(chatbotKeys)
+      .set(updateData)
+      .where(eq(chatbotKeys.id, id))
+      .returning();
+      
+    return updated;
+  }
+  
+  async deleteChatbotKey(id: number): Promise<void> {
+    await db.delete(chatbotKeys).where(eq(chatbotKeys.id, id));
   }
   
   async saveChatHistory(data: InsertChatHistory): Promise<ChatHistory> {

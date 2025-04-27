@@ -95,15 +95,17 @@ export const insertUserBadgeSchema = createInsertSchema(userBadges).pick({
 export const chatbotKeys = pgTable("chatbot_keys", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
-  provider: text("provider").notNull(), // openai, claude, huggingface
-  apiKey: text("api_key").notNull(),
+  provider: text("provider").notNull(), // openai, anthropic
+  key: text("key").notNull(),
+  isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const insertChatbotKeySchema = createInsertSchema(chatbotKeys).pick({
   userId: true,
   provider: true,
-  apiKey: true,
+  key: true,
+  isActive: true,
 });
 
 // Chat history schema
