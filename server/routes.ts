@@ -4,6 +4,7 @@ import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import axios from "axios";
 import { insertChallengeSchema } from "@shared/schema";
+import { generateOpenAICompletion, generateAnthropicCompletion } from "./services/chatbot";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication routes
@@ -228,6 +229,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(200).json(completedChallenges);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch completed challenges" });
+    }
+  });
+  
+  // Direct AI chat completion endpoints - no user API keys required
+  app.post("/api/chatbot/completion", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    
+    try {
+      const { provider, messages } = req.body;
+      
+      if (!Array.isArray(messages) || messages.length === 0) {
+        return res.status(400).json({ message: "Invalid messages data" });
+      }
+      
+      let result;
+      
+      if (provider === "openai") {
+        result = await generateOpenAICompletion(messages);
+      } else if (provider === "anthropic") {
+        result = await generateAnthropicCompletion(messages);
+      } else {
+        return res.status(400).json({ message: "Invalid provider" });
+      }
+      
+      if (!result.success) {
+        return res.status(500).json({ message: result.error || "Failed to generate completion" });
+      }
+      
+      // Save chat history
+      await storage.saveChatHistory({
+        userId: req.user.id,
+        provider,
+        messages: [...messages, result.message],
+        title: messages[0].content.substring(0, 50) + "..."
+      });
+      
+      res.status(200).json({
+        message: result.message,
+        usage: result.usage
+      });
+    } catch (error) {
+      console.error("Error in chat completion:", error);
+      res.status(500).json({ message: "Failed to generate completion" });
     }
   });
 

@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import Sidebar from "./sidebar";
+import Footer from "./footer";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -21,9 +22,12 @@ export default function AppLayout({ children }: AppLayoutProps) {
       <Sidebar />
       
       {/* Main Content */}
-      <main className="flex-1 md:ml-64 lg:ml-72 min-h-screen">
-        {children}
-      </main>
+      <div className="flex-1 md:ml-64 lg:ml-72 min-h-screen flex flex-col">
+        <main className="flex-1">
+          {children}
+        </main>
+        <Footer />
+      </div>
     </div>
   );
 }
