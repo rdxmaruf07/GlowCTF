@@ -40,8 +40,8 @@ export default function ChatbotPage() {
   
   // Save API key mutation
   const saveApiKeyMutation = useMutation({
-    mutationFn: async ({ provider, apiKey }: { provider: string, apiKey: string }) => {
-      const res = await apiRequest("POST", "/api/chatbot/keys", { provider, apiKey });
+    mutationFn: async ({ provider, key }: { provider: string, key: string }) => {
+      const res = await apiRequest("POST", "/api/chatbot/keys", { provider, key });
       return await res.json();
     },
     onSuccess: () => {
@@ -96,7 +96,7 @@ export default function ChatbotPage() {
     
     saveApiKeyMutation.mutate({
       provider: selectedApiProvider,
-      apiKey: newApiKey
+      key: newApiKey
     });
   };
   
