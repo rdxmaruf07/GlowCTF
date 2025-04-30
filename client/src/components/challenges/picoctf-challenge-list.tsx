@@ -1,61 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { 
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { 
-  Tabs, 
-  TabsContent, 
-  TabsList, 
-  TabsTrigger 
-} from "@/components/ui/tabs";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { 
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ExternalLink, Flag, Clock, Award, BookOpen, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { apiRequest } from "@/lib/queryClient";
-import { useAuth } from "@/hooks/use-auth";
-import { motion } from "framer-motion";
-import { FileDown, Award, ExternalLink, CheckCircle, Clock, AlertTriangle } from "lucide-react";
-import { getDifficultyColor } from "@/lib/utils";
 
-// Types
 interface PicoCTFChallenge {
   id: string;
   title: string;
@@ -68,430 +24,341 @@ interface PicoCTFChallenge {
   flag_format?: string;
 }
 
-interface SubmissionResponse {
-  success: boolean;
-  message?: string;
-  points?: number;
-  basePoints?: number;
-  bonusPoints?: number;
-  newBadges?: { id: number; name: string; description: string }[];
-}
-
-// Form schema
-const flagSubmissionSchema = z.object({
-  flag: z.string().min(1, "Flag is required")
-});
-
-type FlagSubmissionValues = z.infer<typeof flagSubmissionSchema>;
-
 export default function PicoCTFChallengeList() {
   const { toast } = useToast();
-  const { user } = useAuth();
   const [selectedChallenge, setSelectedChallenge] = useState<PicoCTFChallenge | null>(null);
+  const [isSubmitDialogOpen, setIsSubmitDialogOpen] = useState(false);
+  const [flag, setFlag] = useState("");
+  const [solution, setSolution] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeTab, setActiveTab] = useState("easy");
   const [startTime, setStartTime] = useState<number | null>(null);
-  const [showSuccessAlert, setShowSuccessAlert] = useState(false);
-  const [submissionResult, setSubmissionResult] = useState<SubmissionResponse | null>(null);
-  const [activeCategory, setActiveCategory] = useState<string>("all");
-  const [searchQuery, setSearchQuery] = useState("");
-
-  // Query to fetch PicoCTF challenges
-  const { data: challenges = [], isLoading, error } = useQuery<PicoCTFChallenge[]>({
-    queryKey: ['/api/picoctf/challenges'],
-    enabled: !!user
+  
+  // Fetch PicoCTF challenges
+  const { data: challenges = [], isLoading, error } = useQuery({
+    queryKey: ["/api/picoctf/challenges"],
   });
+  
+  // Filter challenges by difficulty
+  const filteredChallenges = challenges.filter(
+    (challenge: PicoCTFChallenge) => challenge.difficulty === activeTab
+  );
 
-  // Admin import form
-  const importForm = useForm({
-    defaultValues: {
-      selectedChallenges: [] as string[]
-    }
-  });
-
-  // Flag submission form
-  const form = useForm<FlagSubmissionValues>({
-    resolver: zodResolver(flagSubmissionSchema),
-    defaultValues: {
-      flag: ""
-    }
-  });
-
-  // Effects
-  useEffect(() => {
-    if (selectedChallenge) {
+  // Handle challenge selection
+  const handleChallengeSelect = (challenge: PicoCTFChallenge) => {
+    setSelectedChallenge(challenge);
+    if (!startTime) {
       setStartTime(Date.now());
-    }
-  }, [selectedChallenge]);
-
-  // Handle flag submission
-  const onSubmit = async (values: FlagSubmissionValues) => {
-    if (!selectedChallenge) return;
-    
-    try {
-      const response = await apiRequest("POST", `/api/picoctf/submit/${selectedChallenge.id}`, {
-        flag: values.flag,
-        startTime
-      });
-      
-      const result: SubmissionResponse = await response.json();
-      
-      setSubmissionResult(result);
-      
-      if (result.success) {
-        setShowSuccessAlert(true);
-        form.reset();
-      } else {
-        toast({
-          title: "Incorrect Flag",
-          description: "The submitted flag is incorrect. Try again!",
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Submission Error",
-        description: "Failed to submit flag. Please try again.",
-        variant: "destructive"
-      });
     }
   };
 
-  // Handle admin import
-  const handleImport = async () => {
+  // Handle closing the challenge dialog
+  const handleCloseDialog = () => {
+    setSelectedChallenge(null);
+  };
+
+  // Handle opening the submit dialog
+  const handleOpenSubmitDialog = () => {
+    setIsSubmitDialogOpen(true);
+  };
+
+  // Handle closing the submit dialog
+  const handleCloseSubmitDialog = () => {
+    setIsSubmitDialogOpen(false);
+    setFlag("");
+    setSolution("");
+  };
+
+  // Handle flag submission
+  const handleSubmitFlag = async () => {
+    if (!selectedChallenge) return;
+    
+    setIsSubmitting(true);
+    
     try {
-      const challengesToImport = challenges.filter(
-        (challenge: PicoCTFChallenge) => importForm.getValues().selectedChallenges.includes(challenge.id)
-      );
+      const endTime = Date.now();
+      const timeSpent = startTime ? Math.floor((endTime - startTime) / 1000) : 0;
       
-      const response = await apiRequest("POST", "/api/picoctf/import", {
-        challenges: challengesToImport
+      const response = await apiRequest("POST", "/api/picoctf/submit", {
+        challengeId: selectedChallenge.id,
+        flag,
+        solution,
+        timeSpent,
       });
       
       const result = await response.json();
       
-      if (result.success) {
+      if (result.correct) {
         toast({
-          title: "Import Successful",
-          description: `Imported ${result.count} PicoCTF challenges.`,
-          variant: "default"
+          title: "Correct Flag!",
+          description: "Congratulations! You've solved the challenge.",
         });
-        importForm.reset();
+        setStartTime(null);
+      } else {
+        toast({
+          title: "Incorrect Flag",
+          description: "The submitted flag is incorrect. Try again!",
+          variant: "destructive",
+        });
       }
+      
+      handleCloseSubmitDialog();
     } catch (error) {
       toast({
-        title: "Import Error",
-        description: "Failed to import challenges. Please try again.",
-        variant: "destructive"
+        title: "Submission Error",
+        description: "An error occurred while submitting your flag.",
+        variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  // Get unique categories
-  const categories = challenges 
-    ? ['all', ...Array.from(new Set(challenges.map((c: PicoCTFChallenge) => c.category)))]
-    : ['all'];
-
-  // Filter challenges by category and search
-  const filteredChallenges = challenges 
-    ? challenges.filter((challenge: PicoCTFChallenge) => {
-        const matchesCategory = activeCategory === 'all' || challenge.category === activeCategory;
-        const matchesSearch = challenge.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                              challenge.description.toLowerCase().includes(searchQuery.toLowerCase());
-        return matchesCategory && matchesSearch;
-      })
-    : [];
-
+  // Render loading state
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-primary"></div>
+      <div className="space-y-4">
+        <Tabs defaultValue="easy">
+          <TabsList>
+            <TabsTrigger value="easy">Easy</TabsTrigger>
+            <TabsTrigger value="medium">Medium</TabsTrigger>
+            <TabsTrigger value="hard">Hard</TabsTrigger>
+          </TabsList>
+        </Tabs>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <Card key={i} className="overflow-hidden">
+              <CardHeader className="pb-2">
+                <Skeleton className="h-6 w-3/4" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-4 w-1/2 mb-2" />
+                <Skeleton className="h-4 w-1/3" />
+              </CardContent>
+              <CardFooter>
+                <Skeleton className="h-8 w-20" />
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
       </div>
     );
   }
 
+  // Render error state
   if (error) {
     return (
-      <div className="text-center py-10">
-        <AlertTriangle className="h-16 w-16 text-warning mx-auto mb-4" />
-        <h3 className="text-xl font-bold mb-2">Failed to load challenges</h3>
-        <p className="text-muted-foreground">Please try again later</p>
-      </div>
+      <Card className="border-red-500">
+        <CardHeader>
+          <CardTitle className="text-red-500">Error Loading Challenges</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p>An error occurred while loading the challenges. Please try again later.</p>
+        </CardContent>
+        <CardFooter>
+          <Button onClick={() => window.location.reload()}>Retry</Button>
+        </CardFooter>
+      </Card>
     );
   }
 
   return (
-    <div className="container mx-auto p-4">
-      <div className="mb-8">
-        <h2 className="text-3xl font-bold gradient-text mb-2">PicoCTF Challenges</h2>
-        <p className="text-muted-foreground mb-6">
-          Test your skills against challenges from the popular PicoCTF competition.
-        </p>
+    <div className="space-y-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="easy">Easy</TabsTrigger>
+          <TabsTrigger value="medium">Medium</TabsTrigger>
+          <TabsTrigger value="hard">Hard</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="easy" className="mt-4">
+          {renderChallengeGrid()}
+        </TabsContent>
+        <TabsContent value="medium" className="mt-4">
+          {renderChallengeGrid()}
+        </TabsContent>
+        <TabsContent value="hard" className="mt-4">
+          {renderChallengeGrid()}
+        </TabsContent>
+      </Tabs>
 
-        {/* Search and filter controls */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-6">
-          <Input
-            placeholder="Search challenges..."
-            className="max-w-xs"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-          
-          <Tabs 
-            defaultValue="all" 
-            className="w-full"
-            value={activeCategory}
-            onValueChange={setActiveCategory}
-          >
-            <TabsList className="w-full overflow-x-auto flex flex-nowrap">
-              {categories.map((category) => (
-                <TabsTrigger 
-                  key={category} 
-                  value={category}
-                  className="whitespace-nowrap"
-                >
-                  {category.charAt(0).toUpperCase() + category.slice(1)}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
-        </div>
-
-        {/* Admin import option */}
-        {user?.role === 'admin' && (
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button variant="outline" className="mb-4">
-                Import to Platform
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-3xl">
-              <DialogHeader>
-                <DialogTitle>Import PicoCTF Challenges</DialogTitle>
-                <DialogDescription>
-                  Select challenges to import into the GlowCTF platform.
-                </DialogDescription>
-              </DialogHeader>
-              
-              <div className="py-4 max-h-96 overflow-y-auto">
-                {challenges.map((challenge: PicoCTFChallenge) => (
-                  <div key={challenge.id} className="flex items-center gap-2 py-2">
-                    <input
-                      type="checkbox"
-                      id={`challenge-${challenge.id}`}
-                      value={challenge.id}
-                      {...importForm.register('selectedChallenges')}
-                    />
-                    <Label htmlFor={`challenge-${challenge.id}`} className="flex-1 cursor-pointer">
-                      {challenge.title} ({challenge.points} pts)
-                    </Label>
-                  </div>
-                ))}
-              </div>
-              
-              <DialogFooter>
-                <Button onClick={handleImport}>Import Selected</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        )}
-      </div>
-
-      {/* Challenge grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredChallenges.map((challenge: PicoCTFChallenge) => {
-          const { bgColor, textColor } = getDifficultyColor(challenge.difficulty);
-          
-          return (
-            <motion.div
-              key={challenge.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-              className="h-full"
-            >
-              <Card className="h-full hover:shadow-md transition-shadow neon-border flex flex-col">
-                <CardHeader>
-                  <div className="flex justify-between items-start mb-2">
-                    <Badge className={`${bgColor} ${textColor}`}>
-                      {challenge.difficulty}
-                    </Badge>
-                    <Badge variant="outline">{challenge.points} pts</Badge>
-                  </div>
-                  <CardTitle className="text-xl font-bold">{challenge.title}</CardTitle>
-                  <Badge variant="secondary">{challenge.category}</Badge>
-                </CardHeader>
-                
-                <CardContent className="flex-grow">
-                  <p className="text-muted-foreground">
-                    {challenge.description.length > 120
-                      ? `${challenge.description.substring(0, 120)}...`
-                      : challenge.description}
-                  </p>
-                </CardContent>
-                
-                <CardFooter className="flex justify-end">
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button 
-                        variant="default" 
-                        onClick={() => setSelectedChallenge(challenge)}
-                      >
-                        View Challenge
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-3xl">
-                      <DialogHeader>
-                        <div className="flex items-center gap-2 mb-1">
-                          <Badge className={`${bgColor} ${textColor}`}>
-                            {challenge.difficulty}
-                          </Badge>
-                          <Badge variant="outline">{challenge.points} pts</Badge>
-                          <Badge variant="secondary">{challenge.category}</Badge>
-                        </div>
-                        <DialogTitle className="text-2xl">{challenge.title}</DialogTitle>
-                      </DialogHeader>
-                      
-                      <div className="py-4">
-                        <h4 className="font-semibold mb-2">Description</h4>
-                        <p className="mb-4 whitespace-pre-line text-muted-foreground">
-                          {challenge.description}
-                        </p>
-                        
-                        {challenge.files && challenge.files.length > 0 && (
-                          <>
-                            <h4 className="font-semibold mb-2">Files</h4>
-                            <div className="flex flex-wrap gap-2 mb-4">
-                              {challenge.files.map((file, index) => (
-                                <a
-                                  key={index}
-                                  href={file.url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex items-center gap-1 px-3 py-1 rounded-md bg-secondary hover:bg-secondary/80 transition-colors"
-                                >
-                                  <FileDown className="h-4 w-4" />
-                                  <span>{file.name}</span>
-                                  <ExternalLink className="h-3 w-3 ml-1" />
-                                </a>
-                              ))}
-                            </div>
-                          </>
-                        )}
-                        
-                        {challenge.hints && challenge.hints.length > 0 && (
-                          <>
-                            <h4 className="font-semibold mb-2">Hints</h4>
-                            <ul className="list-disc list-inside mb-4 space-y-1">
-                              {challenge.hints.map((hint, index) => (
-                                <li key={index} className="text-muted-foreground">
-                                  {hint}
-                                </li>
-                              ))}
-                            </ul>
-                          </>
-                        )}
-                        
-                        <Separator className="my-4" />
-                        
-                        <h4 className="font-semibold mb-2">Submit Flag</h4>
-                        <Form {...form}>
-                          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                            <FormField
-                              control={form.control}
-                              name="flag"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>
-                                    Flag
-                                    {challenge.flag_format && (
-                                      <span className="ml-2 text-xs text-muted-foreground font-mono">
-                                        Format: {challenge.flag_format}
-                                      </span>
-                                    )}
-                                  </FormLabel>
-                                  <FormControl>
-                                    <Input 
-                                      placeholder="flag{...}" 
-                                      {...field}
-                                      className="font-mono"
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                            <Button type="submit" className="w-full">
-                              Submit Flag
-                            </Button>
-                          </form>
-                        </Form>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                </CardFooter>
-              </Card>
-            </motion.div>
-          );
-        })}
-      </div>
-
-      {/* Success alert */}
-      <AlertDialog open={showSuccessAlert} onOpenChange={setShowSuccessAlert}>
-        <AlertDialogContent className="max-w-md">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 text-2xl">
-              <CheckCircle className="h-6 w-6 text-green-500" />
-              Challenge Completed!
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-center">
-              <p className="mb-4">
-                Congratulations! You've successfully solved this challenge.
-              </p>
-              
-              <div className="bg-card p-4 rounded-lg mb-4">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-muted-foreground">Base points:</span>
-                  <span className="font-semibold">{submissionResult?.basePoints} pts</span>
-                </div>
-                
-                {(submissionResult?.bonusPoints || 0) > 0 && (
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-muted-foreground flex items-center gap-1">
-                      <Clock className="h-4 w-4" /> Time bonus:
-                    </span>
-                    <span className="text-primary font-semibold">+{submissionResult?.bonusPoints} pts</span>
+      {/* Challenge Details Dialog */}
+      {selectedChallenge && (
+        <Dialog open={!!selectedChallenge} onOpenChange={(open) => !open && handleCloseDialog()}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                {selectedChallenge.title}
+                <Badge variant="outline" className="ml-2">
+                  {selectedChallenge.category}
+                </Badge>
+                <Badge className="ml-auto">
+                  <Award className="w-3 h-3 mr-1" />
+                  {selectedChallenge.points} pts
+                </Badge>
+              </DialogTitle>
+              <DialogDescription>
+                {startTime && (
+                  <div className="flex items-center text-sm text-muted-foreground mb-2">
+                    <Clock className="w-3 h-3 mr-1" />
+                    Timer started
                   </div>
                 )}
-                
-                <Separator className="my-2" />
-                
-                <div className="flex justify-between items-center font-bold">
-                  <span>Total earned:</span>
-                  <span className="text-lg gradient-text">{submissionResult?.points} pts</span>
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-sm font-medium mb-2 flex items-center">
+                  <BookOpen className="w-4 h-4 mr-1" /> Description
+                </h4>
+                <div className="text-sm prose prose-sm max-w-none">
+                  {selectedChallenge.description}
                 </div>
               </div>
               
-              {submissionResult?.newBadges && submissionResult.newBadges.length > 0 && (
-                <div className="mb-4">
-                  <h4 className="font-semibold mb-2 flex items-center gap-1">
-                    <Award className="h-4 w-4 text-primary" />
-                    New Badges Earned
-                  </h4>
-                  <div className="flex flex-wrap gap-2 justify-center">
-                    {submissionResult.newBadges.map(badge => (
-                      <Badge key={badge.id} className="py-1 px-2 badge-glow">
-                        {badge.name}
-                      </Badge>
+              {selectedChallenge.hints && selectedChallenge.hints.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-medium mb-2">Hints</h4>
+                  <ul className="list-disc pl-5 text-sm space-y-1">
+                    {selectedChallenge.hints.map((hint, index) => (
+                      <li key={index}>{hint}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              
+              {selectedChallenge.files && selectedChallenge.files.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-medium mb-2">Files</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedChallenge.files.map((file, index) => (
+                      <Button key={index} variant="outline" size="sm" asChild>
+                        <a href={file.url} target="_blank" rel="noopener noreferrer" className="flex items-center">
+                          <Download className="w-3 h-3 mr-1" />
+                          {file.name}
+                        </a>
+                      </Button>
                     ))}
                   </div>
                 </div>
               )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction>Continue</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+              
+              {selectedChallenge.flag_format && (
+                <div>
+                  <h4 className="text-sm font-medium mb-2">Flag Format</h4>
+                  <code className="text-xs bg-muted p-1 rounded">
+                    {selectedChallenge.flag_format}
+                  </code>
+                </div>
+              )}
+            </div>
+            
+            <DialogFooter>
+              <Button variant="outline" onClick={handleCloseDialog}>
+                Close
+              </Button>
+              <Button onClick={handleOpenSubmitDialog}>
+                <Flag className="w-4 h-4 mr-2" />
+                Submit Flag
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+      
+      {/* Flag Submission Dialog */}
+      <Dialog open={isSubmitDialogOpen} onOpenChange={setIsSubmitDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Submit Flag</DialogTitle>
+            <DialogDescription>
+              Enter the flag you found and a brief explanation of your solution.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="flag" className="text-sm font-medium">
+                Flag
+              </label>
+              <Input
+                id="flag"
+                value={flag}
+                onChange={(e) => setFlag(e.target.value)}
+                placeholder={selectedChallenge?.flag_format || "picoCTF{flag}"}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <label htmlFor="solution" className="text-sm font-medium">
+                Solution (optional)
+              </label>
+              <Textarea
+                id="solution"
+                value={solution}
+                onChange={(e) => setSolution(e.target.value)}
+                placeholder="Explain how you solved this challenge..."
+                rows={4}
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCloseSubmitDialog}>
+              Cancel
+            </Button>
+            <Button onClick={handleSubmitFlag} disabled={!flag || isSubmitting}>
+              {isSubmitting ? "Submitting..." : "Submit"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
+
+  // Helper function to render the challenge grid
+  function renderChallengeGrid() {
+    if (filteredChallenges.length === 0) {
+      return (
+        <Card>
+          <CardContent className="pt-6 text-center">
+            <p className="text-muted-foreground">No challenges available for this difficulty level.</p>
+          </CardContent>
+        </Card>
+      );
+    }
+
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {filteredChallenges.map((challenge) => (
+          <Card key={challenge.id} className="overflow-hidden hover:shadow-md transition-shadow">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">{challenge.title}</CardTitle>
+              <CardDescription className="flex items-center">
+                <Badge variant="outline" className="mr-2">
+                  {challenge.category}
+                </Badge>
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground line-clamp-2">
+                {challenge.description.substring(0, 100)}
+                {challenge.description.length > 100 ? "..." : ""}
+              </p>
+            </CardContent>
+            <CardFooter className="flex justify-between">
+              <Badge variant="secondary">
+                <Award className="w-3 h-3 mr-1" />
+                {challenge.points} pts
+              </Badge>
+              <Button size="sm" onClick={() => handleChallengeSelect(challenge)}>
+                View Challenge
+              </Button>
+            </CardFooter>
+          </Card>
+        ))}
+      </div>
+    );
+  }
 }

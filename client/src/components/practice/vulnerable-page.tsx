@@ -425,6 +425,304 @@ app.get('/redirect', (req, res) => {
         </CardFooter>
       </Card>
     )
+  },
+  "buffer-overflow": {
+    task: "The C program below is vulnerable to buffer overflow. Your goal is to identify how to overflow the buffer and gain control of the program execution.",
+    hint: "Look at the size of the buffer and how the input is handled. What happens if you input more characters than the buffer can hold?",
+    solution: "Input a string longer than 64 characters to overflow the buffer.\n\nThis works because the program uses gets() which doesn't check the bounds of the input, allowing you to write beyond the allocated buffer and potentially overwrite the return address on the stack.",
+    vulnerable_app: (
+      <Card className="border border-red-900/50 bg-background/50">
+        <CardHeader>
+          <CardTitle className="text-xl">Buffer Overflow Simulator</CardTitle>
+          <CardDescription>Analyze the vulnerable C code and test inputs</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="code-comment">
+              <pre className="text-xs text-muted-foreground bg-background p-2 rounded border border-border">
+                <code>{`
+// Vulnerable C code (DO NOT USE IN PRODUCTION!)
+#include <stdio.h>
+#include <string.h>
+
+void vulnerable_function() {
+  char buffer[64]; // Only 64 bytes allocated
+  
+  // BUFFER OVERFLOW VULNERABILITY HERE!
+  // gets() doesn't check bounds - can write beyond buffer
+  gets(buffer);
+  
+  printf("You entered: %s\\n", buffer);
+}
+
+int main() {
+  printf("Enter your name: ");
+  vulnerable_function();
+  return 0;
+}
+                `}</code>
+              </pre>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="buffer-input">Input String</Label>
+              <Textarea 
+                id="buffer-input" 
+                placeholder="Enter a string to test..." 
+                className="font-mono"
+              />
+              <p className="text-xs text-muted-foreground">Try entering different length strings to see what happens</p>
+            </div>
+          </div>
+        </CardContent>
+        <CardFooter className="flex flex-col items-start">
+          <Button 
+            onClick={() => {
+              const inputElement = document.getElementById('buffer-input') as HTMLTextAreaElement;
+              const input = inputElement?.value || '';
+              
+              if (!input) {
+                alert("Please enter a string to test.");
+                return;
+              }
+              
+              if (input.length > 64) {
+                alert("Buffer overflow detected! You've entered " + input.length + " characters, which exceeds the 64-byte buffer.\n\nIn a real vulnerable program, this could allow you to overwrite the return address and hijack program execution!");
+              } else {
+                alert("Input processed normally. Your input is within the buffer size limits.");
+              }
+            }}
+            className="mb-3"
+          >
+            Execute Program
+          </Button>
+          
+          <div className="w-full bg-black rounded p-2 text-sm font-mono text-green-400 min-h-20">
+            <p>Program output will appear here...</p>
+          </div>
+        </CardFooter>
+      </Card>
+    )
+  },
+  "race-condition": {
+    task: "The application below has a race condition vulnerability in its transaction processing. Your goal is to exploit the timing issue to double-spend credits.",
+    hint: "Try making multiple quick transactions. What happens if you click 'Transfer Credits' multiple times very quickly?",
+    solution: "Click the 'Transfer Credits' button multiple times in rapid succession.\n\nThis works because the application doesn't properly lock the account balance during the transaction process, allowing multiple transactions to read the same initial balance before any of them complete.",
+    vulnerable_app: (
+      <Card className="border border-red-900/50 bg-background/50">
+        <CardHeader>
+          <CardTitle className="text-xl">Credit Transfer System</CardTitle>
+          <CardDescription>Transfer credits between accounts</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex justify-between p-3 bg-card rounded-md">
+              <div>
+                <div className="text-sm text-muted-foreground">Your Account Balance:</div>
+                <div className="font-medium text-xl">100 Credits</div>
+              </div>
+              <div>
+                <div className="text-sm text-muted-foreground">Friend's Account:</div>
+                <div className="font-medium">user123</div>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="transfer-amount">Transfer Amount</Label>
+              <Input 
+                id="transfer-amount" 
+                type="number" 
+                defaultValue="20"
+                min="1"
+                max="100"
+              />
+            </div>
+            
+            <div className="code-comment">
+              <pre className="text-xs text-muted-foreground bg-background p-2 rounded border border-border">
+                <code>{`
+// Vulnerable code (DO NOT USE IN PRODUCTION!)
+app.post('/transfer', async (req, res) => {
+  const { amount, toAccount } = req.body;
+  const userId = req.user.id;
+  
+  // RACE CONDITION VULNERABILITY HERE!
+  // No transaction or locking mechanism
+  
+  // 1. Get current balance
+  const account = await db.accounts.findOne({ userId });
+  const currentBalance = account.balance;
+  
+  // 2. Check if enough balance
+  if (currentBalance >= amount) {
+    // Artificial delay that makes race condition more likely
+    await sleep(1000);
+    
+    // 3. Update balance
+    await db.accounts.update(
+      { userId }, 
+      { balance: currentBalance - amount }
+    );
+    
+    // 4. Add to recipient's account
+    await db.accounts.update(
+      { userId: toAccount }, 
+      { $inc: { balance: amount } }
+    );
+    
+    res.json({ success: true });
+  } else {
+    res.json({ success: false, message: 'Insufficient funds' });
+  }
+});
+                `}</code>
+              </pre>
+            </div>
+          </div>
+        </CardContent>
+        <CardFooter className="flex flex-col items-start">
+          <Button 
+            id="transfer-button"
+            onClick={(e) => {
+              const button = e.currentTarget;
+              const amountInput = document.getElementById('transfer-amount') as HTMLInputElement;
+              const amount = parseInt(amountInput?.value || '0');
+              
+              if (amount <= 0) {
+                alert("Please enter a valid amount.");
+                return;
+              }
+              
+              // Disable button temporarily to simulate processing
+              button.disabled = true;
+              
+              // Get the current timestamp to identify rapid clicks
+              const now = new Date().getTime();
+              const lastClick = parseInt(button.getAttribute('data-last-click') || '0');
+              
+              // If clicked within 1 second of last click, it's potentially a race condition exploit
+              if (now - lastClick < 1000 && lastClick > 0) {
+                setTimeout(() => {
+                  alert("Race condition vulnerability exploited! In a real vulnerable app, you could transfer more credits than your balance allows!");
+                  button.disabled = false;
+                }, 500);
+              } else {
+                setTimeout(() => {
+                  alert("Transfer completed successfully!");
+                  button.disabled = false;
+                }, 500);
+              }
+              
+              // Store this click timestamp
+              button.setAttribute('data-last-click', now.toString());
+            }}
+            className="mb-3"
+          >
+            Transfer Credits
+          </Button>
+          
+          <div className="w-full bg-black rounded p-2 text-sm font-mono text-green-400 min-h-20">
+            <p>Transaction log will appear here...</p>
+          </div>
+        </CardFooter>
+      </Card>
+    )
+  },
+  "cryptography": {
+    task: "The encryption system below uses a weak implementation of a substitution cipher. Your goal is to decrypt the message without knowing the key.",
+    hint: "Analyze the frequency of characters in the ciphertext. In English, 'E' is the most common letter. Can you use frequency analysis to break the cipher?",
+    solution: "Use frequency analysis to identify the most common characters in the ciphertext and map them to common English letters (E, T, A, O, I, N).\n\nThis works because simple substitution ciphers preserve the frequency patterns of the original text, making them vulnerable to statistical analysis.",
+    vulnerable_app: (
+      <Card className="border border-red-900/50 bg-background/50">
+        <CardHeader>
+          <CardTitle className="text-xl">Substitution Cipher</CardTitle>
+          <CardDescription>Analyze and break the encrypted message</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="p-3 bg-card rounded-md">
+              <div className="text-sm text-muted-foreground mb-1">Encrypted Message:</div>
+              <div className="font-mono text-sm break-all">
+                Xqj dsm vjacp xqnw hjwwpbj. Xqj cjd nw: WJHZANXD_KNAWX
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="decryption-attempt">Your Decryption Attempt</Label>
+              <Textarea 
+                id="decryption-attempt" 
+                placeholder="Enter your decrypted message..." 
+                className="font-mono"
+              />
+            </div>
+            
+            <div className="code-comment">
+              <pre className="text-xs text-muted-foreground bg-background p-2 rounded border border-border">
+                <code>{`
+// Vulnerable encryption code (DO NOT USE IN PRODUCTION!)
+function encrypt(plaintext, key) {
+  // WEAK CRYPTOGRAPHY VULNERABILITY HERE!
+  // Simple substitution cipher - easily broken with frequency analysis
+  
+  let ciphertext = '';
+  for (let i = 0; i < plaintext.length; i++) {
+    const char = plaintext[i];
+    if (char.match(/[a-z]/i)) {
+      const code = plaintext.charCodeAt(i);
+      // Determine if character is uppercase or lowercase
+      const isUpperCase = code >= 65 && code <= 90;
+      // Apply substitution based on key
+      const offset = isUpperCase ? 65 : 97;
+      const keyIndex = (code - offset) % 26;
+      const encryptedChar = key[keyIndex];
+      ciphertext += isUpperCase ? 
+                    encryptedChar.toUpperCase() : 
+                    encryptedChar.toLowerCase();
+    } else {
+      // Non-alphabetic characters remain unchanged
+      ciphertext += char;
+    }
+  }
+  return ciphertext;
+}
+                `}</code>
+              </pre>
+            </div>
+          </div>
+        </CardContent>
+        <CardFooter>
+          <Button 
+            onClick={() => {
+              const decryptionInput = document.getElementById('decryption-attempt') as HTMLTextAreaElement;
+              const attempt = decryptionInput?.value?.toLowerCase() || '';
+              const solution = "you can crack this message. the key is: security_first".toLowerCase();
+              
+              // Check if the attempt is close to the solution
+              let correctChars = 0;
+              const minLength = Math.min(attempt.length, solution.length);
+              
+              for (let i = 0; i < minLength; i++) {
+                if (attempt[i] === solution[i]) {
+                  correctChars++;
+                }
+              }
+              
+              const accuracy = minLength > 0 ? (correctChars / minLength) * 100 : 0;
+              
+              if (accuracy > 80) {
+                alert("Great job! You've successfully decrypted the message!");
+              } else if (accuracy > 50) {
+                alert("You're on the right track! Keep analyzing the patterns.");
+              } else {
+                alert("Try again. Hint: Look for patterns in letter frequency.");
+              }
+            }}
+          >
+            Check Decryption
+          </Button>
+        </CardFooter>
+      </Card>
+    )
   }
 };
 

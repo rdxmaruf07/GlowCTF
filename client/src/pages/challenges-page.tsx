@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import AppLayout from "@/components/layout/app-layout";
 import ChallengeCard from "@/components/challenges/challenge-card";
 import PicoCTFChallengeList from "@/components/challenges/picoctf-challenge-list";
+import PlatformCTFChallengeList from "@/components/challenges/platform-ctf-challenge-list";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -93,9 +94,10 @@ export default function ChallengesPage() {
           onValueChange={setActiveTab}
           className="mb-6"
         >
-          <TabsList className="grid grid-cols-2 w-full max-w-md">
+          <TabsList className="grid grid-cols-3 w-full max-w-md">
             <TabsTrigger value="platform" className="text-primary">Platform Challenges</TabsTrigger>
             <TabsTrigger value="picoctf" className="text-accent">PicoCTF Challenges</TabsTrigger>
+            <TabsTrigger value="platformctf" className="text-success">Platform CTF</TabsTrigger>
           </TabsList>
 
           <TabsContent value="platform" className="mt-6">
@@ -196,6 +198,10 @@ export default function ChallengesPage() {
 
           <TabsContent value="picoctf" className="mt-6">
             <PicoCTFChallengeList />
+          </TabsContent>
+
+          <TabsContent value="platformctf" className="mt-6">
+            <PlatformCTFChallengeList />
           </TabsContent>
         </Tabs>
       </div>

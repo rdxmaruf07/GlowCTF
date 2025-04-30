@@ -1,3 +1,7 @@
+// This file implements the storage interface using PostgreSQL (Neon Serverless)
+// This is the primary storage implementation used by the application
+// For MySQL implementation, see mysql-storage.ts
+
 import { 
   users, type User, type InsertUser,
   challenges, type Challenge, type InsertChallenge,
@@ -47,6 +51,9 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUserScore(userId: number, points: number): Promise<User>;
+  updateUserBanStatus(userId: number, isBanned: boolean): Promise<User>;
+  updateUserAvatar(userId: number, avatarUrl: string): Promise<User>;
+  updateUserLastActive(userId: number): Promise<void>;
   getUserStats(userId: number): Promise<UserStats>;
   getAllUsers(): Promise<User[]>;
   
@@ -101,9 +108,23 @@ export class DatabaseStorage implements IStorage {
   sessionStore: any;
   
   constructor() {
+    // Optimize session store for Neon serverless PostgreSQL
     this.sessionStore = new PostgresSessionStore({ 
       pool,
-      createTableIfMissing: true 
+      createTableIfMissing: true,
+      // Optimize session table configuration for Neon serverless
+      tableName: 'session', // Default table name
+      schemaName: 'public', // Default schema
+      // Optimize session cleanup
+      pruneSessionInterval: 60 * 15, // Prune expired sessions every 15 minutes (in seconds)
+      // Optimize session data handling
+      errorLog: (err) => console.error('Session store error:', err),
+      // Optimize session table columns
+      columnNames: {
+        session_id: 'sid',
+        session_data: 'sess',
+        expire: 'expire'
+      }
     });
   }
   
@@ -136,40 +157,155 @@ export class DatabaseStorage implements IStorage {
     return updatedUser;
   }
   
+  async updateUserBanStatus(userId: number, isBanned: boolean): Promise<User> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({ isBanned })
+      .where(eq(users.id, userId))
+      .returning();
+      
+    if (!updatedUser) throw new Error("User not found");
+    return updatedUser;
+  }
+  
+  async updateUserAvatar(userId: number, avatarUrl: string): Promise<User> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({ avatarUrl })
+      .where(eq(users.id, userId))
+      .returning();
+      
+    if (!updatedUser) throw new Error("User not found");
+    return updatedUser;
+  }
+  
+  async updateUserLastActive(userId: number): Promise<void> {
+    await db
+      .update(users)
+      .set({ lastActive: new Date() })
+      .where(eq(users.id, userId));
+  }
+  
   async getAllUsers(): Promise<User[]> {
     return await db.select().from(users);
   }
   
   async getUserStats(userId: number): Promise<UserStats> {
-    // Get user rank based on score
-    const userRanksResult = await db.execute(sql`
-      SELECT id, RANK() OVER (ORDER BY score DESC) as rank FROM ${users}
+    // Optimize user stats query for Neon serverless PostgreSQL
+    // Use a single query to get user rank, completed challenges count, and badges count
+    const statsQuery = await db.execute(sql`
+      WITH user_ranks AS (
+        SELECT id, score, RANK() OVER (ORDER BY score DESC) as rank 
+        FROM ${users}
+      ),
+      user_completed_challenges AS (
+        SELECT COUNT(*) as challenges_solved
+        FROM ${completedChallenges}
+        WHERE user_id = ${userId}
+      ),
+      user_badges AS (
+        SELECT COUNT(*) as badges_earned
+        FROM ${userBadges}
+        WHERE user_id = ${userId}
+      )
+      SELECT 
+        ur.rank,
+        u.score as total_points,
+        COALESCE(ucc.challenges_solved, 0) as challenges_solved,
+        COALESCE(ub.badges_earned, 0) as badges_earned
+      FROM ${users} u
+      JOIN user_ranks ur ON u.id = ur.id
+      LEFT JOIN user_completed_challenges ucc ON 1=1
+      LEFT JOIN user_badges ub ON 1=1
+      WHERE u.id = ${userId}
     `);
-    const userRanks = userRanksResult.rows as { id: number, rank: number }[];
-    const userRank = userRanks.find(r => r.id === userId)?.rank || 0;
     
-    // Get user
-    const [user] = await db.select().from(users).where(eq(users.id, userId));
-    if (!user) throw new Error("User not found");
+    if (statsQuery.rows.length === 0) {
+      throw new Error("User not found");
+    }
     
-    // Count completed challenges
-    const completedCount = await db
-      .select({ count: sql<number>`count(*)` })
+    const stats = statsQuery.rows[0] as any;
+    
+    // Calculate streak based on user activity
+    let streak = 0;
+    
+    // Get the most recent completed challenges for streak calculation
+    // This is kept as a separate query as it's more complex
+    const recentChallenges = await db
+      .select()
       .from(completedChallenges)
-      .where(eq(completedChallenges.userId, userId));
+      .where(eq(completedChallenges.userId, userId))
+      .orderBy(desc(completedChallenges.completedAt))
+      .limit(30); // Get last 30 days of activity
     
-    // Count badges
-    const badgesCount = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(userBadges)
-      .where(eq(userBadges.userId, userId));
+    if (recentChallenges.length > 0) {
+      // Check if user has activity today
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const hasActivityToday = recentChallenges.some(challenge => {
+        const challengeDate = new Date(challenge.completedAt);
+        challengeDate.setHours(0, 0, 0, 0);
+        return challengeDate.getTime() === today.getTime();
+      });
+      
+      // Start with 1 for today if there's activity
+      streak = hasActivityToday ? 1 : 0;
+      
+      // Check previous days
+      let currentDate = new Date(today);
+      currentDate.setDate(currentDate.getDate() - 1); // Start from yesterday
+      
+      while (true) {
+        const currentDateStart = new Date(currentDate);
+        currentDateStart.setHours(0, 0, 0, 0);
+        
+        const hasActivity = recentChallenges.some(challenge => {
+          const challengeDate = new Date(challenge.completedAt);
+          challengeDate.setHours(0, 0, 0, 0);
+          return challengeDate.getTime() === currentDateStart.getTime();
+        });
+        
+        if (hasActivity) {
+          streak++;
+          currentDate.setDate(currentDate.getDate() - 1);
+        } else {
+          break;
+        }
+      }
+      
+      // If no activity today but had activity yesterday, still count the streak
+      if (streak === 0) {
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        
+        const hasActivityYesterday = recentChallenges.some(challenge => {
+          const challengeDate = new Date(challenge.completedAt);
+          challengeDate.setHours(0, 0, 0, 0);
+          return challengeDate.getTime() === yesterday.getTime();
+        });
+        
+        if (hasActivityYesterday) {
+          streak = 1;
+        }
+      }
+    }
+    
+    // Ensure streak is at least 1 if user has any completed challenges
+    streak = Math.max(streak, stats.challenges_solved > 0 ? 1 : 0);
+    
+    // Update user's last active timestamp if needed
+    const [user] = await db.select().from(users).where(eq(users.id, userId));
+    if (user && user.lastActive === null) {
+      await this.updateUserLastActive(userId);
+    }
     
     return {
-      rank: userRank,
-      totalPoints: user.score,
-      challengesSolved: completedCount[0]?.count || 0,
-      badgesEarned: badgesCount[0]?.count || 0,
-      streak: 1 // Default for now, will implement proper streak tracking later
+      rank: Number(stats.rank),
+      totalPoints: Number(stats.total_points),
+      challengesSolved: Number(stats.challenges_solved),
+      badgesEarned: Number(stats.badges_earned),
+      streak: streak
     };
   }
   
@@ -202,21 +338,23 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getUserCompletedChallenges(userId: number): Promise<Challenge[]> {
-    const userCompletedChallenges = await db
+    // Optimize query for Neon serverless PostgreSQL using a JOIN instead of multiple queries
+    return await db
       .select({
-        challengeId: completedChallenges.challengeId
+        id: challenges.id,
+        title: challenges.title,
+        description: challenges.description,
+        difficulty: challenges.difficulty,
+        category: challenges.category,
+        points: challenges.points,
+        flag: challenges.flag,
+        solveCount: challenges.solveCount,
+        createdAt: challenges.createdAt,
+        imageUrl: challenges.imageUrl
       })
       .from(completedChallenges)
+      .innerJoin(challenges, eq(completedChallenges.challengeId, challenges.id))
       .where(eq(completedChallenges.userId, userId));
-    
-    if (userCompletedChallenges.length === 0) return [];
-    
-    const challengeIds = userCompletedChallenges.map(c => c.challengeId);
-    
-    return await db
-      .select()
-      .from(challenges)
-      .where(sql`${challenges.id} IN (${challengeIds.join(',')})`);
   }
   
   // Badge methods
@@ -225,21 +363,18 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getUserBadges(userId: number): Promise<Badge[]> {
-    const userBadgesResult = await db
+    // Optimize query for Neon serverless PostgreSQL using a JOIN instead of multiple queries
+    return await db
       .select({
-        badgeId: userBadges.badgeId
+        id: badges.id,
+        name: badges.name,
+        description: badges.description,
+        imageUrl: badges.imageUrl,
+        requirement: badges.requirement
       })
       .from(userBadges)
+      .innerJoin(badges, eq(userBadges.badgeId, badges.id))
       .where(eq(userBadges.userId, userId));
-    
-    if (userBadgesResult.length === 0) return [];
-    
-    const badgeIds = userBadgesResult.map(b => b.badgeId);
-    
-    return await db
-      .select()
-      .from(badges)
-      .where(sql`${badges.id} IN (${badgeIds.join(',')})`);
   }
   
   async awardBadge(data: InsertUserBadge): Promise<UserBadge> {
@@ -263,9 +398,159 @@ export class DatabaseStorage implements IStorage {
   }
   
   async checkAndAwardBadges(userId: number, challengeId: number): Promise<Badge[]> {
-    // This is a complex function that will need a proper implementation
-    // For now, return empty array
-    return [];
+    // Get the user's completed challenges
+    const completedChallengesCount = await db.select({
+      count: sql<number>`count(*)`
+    }).from(completedChallenges)
+      .where(eq(completedChallenges.userId, userId));
+    
+    const count = completedChallengesCount[0]?.count || 0;
+    
+    // Get the challenge category
+    const challenge = await this.getChallengeById(challengeId);
+    
+    if (!challenge) {
+      return [];
+    }
+    
+    // Get category-specific challenges completed
+    const categoryChallengesCount = await db.select({
+      count: sql<number>`count(*)`
+    }).from(completedChallenges)
+      .innerJoin(challenges, eq(completedChallenges.challengeId, challenges.id))
+      .where(
+        and(
+          eq(completedChallenges.userId, userId),
+          eq(challenges.category, challenge.category)
+        )
+      );
+    
+    const categoryCount = categoryChallengesCount[0]?.count || 0;
+    
+    // Get difficulty-specific challenges completed
+    const difficultyChallengesCount = await db.select({
+      count: sql<number>`count(*)`
+    }).from(completedChallenges)
+      .innerJoin(challenges, eq(completedChallenges.challengeId, challenges.id))
+      .where(
+        and(
+          eq(completedChallenges.userId, userId),
+          eq(challenges.difficulty, challenge.difficulty)
+        )
+      );
+    
+    const difficultyCount = difficultyChallengesCount[0]?.count || 0;
+    
+    // Get user's total score
+    const user = await this.getUser(userId);
+    const userScore = user?.score || 0;
+    
+    // Get all badges
+    const allBadges = await this.getAllBadges();
+    
+    // Get user's existing badges
+    const userBadges = await this.getUserBadges(userId);
+    const userBadgeIds = userBadges.map(badge => badge.id);
+    
+    // Check which badges should be awarded
+    const badgesToAward = allBadges.filter(badge => {
+      // Skip if user already has this badge
+      if (userBadgeIds.includes(badge.id)) {
+        return false;
+      }
+      
+      // First blood (first to solve a challenge)
+      if (badge.requirement === 'first-blood' && challenge.solveCount === 0) {
+        return true;
+      }
+      
+      // Milestone badges - challenges solved
+      if (badge.requirement === 'solve-1' && count >= 1) {
+        return true;
+      }
+      
+      if (badge.requirement === 'solve-5' && count >= 5) {
+        return true;
+      }
+      
+      if (badge.requirement === 'solve-10' && count >= 10) {
+        return true;
+      }
+      
+      if (badge.requirement === 'solve-25' && count >= 25) {
+        return true;
+      }
+      
+      if (badge.requirement === 'solve-50' && count >= 50) {
+        return true;
+      }
+      
+      if (badge.requirement === 'solve-100' && count >= 100) {
+        return true;
+      }
+      
+      // Category specialist badges
+      if (badge.requirement === `category-${challenge.category}-3` && categoryCount >= 3) {
+        return true;
+      }
+      
+      if (badge.requirement === `category-${challenge.category}-5` && categoryCount >= 5) {
+        return true;
+      }
+      
+      if (badge.requirement === `category-${challenge.category}-10` && categoryCount >= 10) {
+        return true;
+      }
+      
+      // Difficulty milestone badges
+      if (badge.requirement === `difficulty-${challenge.difficulty}-3` && difficultyCount >= 3) {
+        return true;
+      }
+      
+      if (badge.requirement === `difficulty-${challenge.difficulty}-5` && difficultyCount >= 5) {
+        return true;
+      }
+      
+      if (badge.requirement === `difficulty-${challenge.difficulty}-10` && difficultyCount >= 10) {
+        return true;
+      }
+      
+      // Score milestone badges
+      if (badge.requirement === 'score-1000' && userScore >= 1000) {
+        return true;
+      }
+      
+      if (badge.requirement === 'score-5000' && userScore >= 5000) {
+        return true;
+      }
+      
+      if (badge.requirement === 'score-10000' && userScore >= 10000) {
+        return true;
+      }
+      
+      if (badge.requirement === 'score-25000' && userScore >= 25000) {
+        return true;
+      }
+      
+      if (badge.requirement === 'score-50000' && userScore >= 50000) {
+        return true;
+      }
+      
+      return false;
+    });
+    
+    // Award badges
+    const awardedBadges = await Promise.all(
+      badgesToAward.map(async badge => {
+        await this.awardBadge({
+          userId,
+          badgeId: badge.id
+        });
+        return badge;
+      })
+    );
+    
+    return awardedBadges;
   }
   
   // Chatbot methods
@@ -329,31 +614,41 @@ export class DatabaseStorage implements IStorage {
   
   // Leaderboard methods
   async getLeaderboard(): Promise<LeaderboardEntry[]> {
-    const userRanks = await db.execute(sql`
-      SELECT id, username, score, RANK() OVER (ORDER BY score DESC) as rank FROM ${users}
-      ORDER BY rank ASC
-      LIMIT 100
+    // Optimize leaderboard query for Neon serverless PostgreSQL
+    // Use a single query with joins to reduce round trips to the database
+    const leaderboardQuery = await db.execute(sql`
+      WITH ranked_users AS (
+        SELECT 
+          u.id, 
+          u.username, 
+          u.score, 
+          u.avatar_url,
+          RANK() OVER (ORDER BY u.score DESC) as rank,
+          COUNT(DISTINCT cc.id) as solved_challenges_count
+        FROM ${users} u
+        LEFT JOIN ${completedChallenges} cc ON u.id = cc.user_id
+        WHERE u.is_banned = false
+        GROUP BY u.id, u.username, u.score, u.avatar_url
+        ORDER BY rank ASC
+        LIMIT 100
+      )
+      SELECT * FROM ranked_users
     `);
     
     const leaderboard = [];
     
-    for (const userRank of userRanks.rows as any[]) {
+    for (const userRank of leaderboardQuery.rows as any[]) {
+      // Get badges in a separate query since they can't be easily joined
       const badges = await this.getUserBadges(userRank.id);
-      
-      // Count solved challenges
-      const solvedChallenges = await db
-        .select({ count: sql<number>`count(*)` })
-        .from(completedChallenges)
-        .where(eq(completedChallenges.userId, userRank.id));
       
       leaderboard.push({
         id: userRank.id,
         username: userRank.username,
         score: userRank.score,
         badges,
-        solvedChallenges: solvedChallenges[0]?.count || 0,
+        solvedChallenges: Number(userRank.solved_challenges_count),
         rank: Number(userRank.rank),
-        avatarUrl: undefined
+        avatarUrl: userRank.avatar_url
       });
     }
     
@@ -435,23 +730,23 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getContestChallenges(contestId: number): Promise<Challenge[]> {
-    const contestChallengeEntries = await db
+    // Optimize query for Neon serverless PostgreSQL using a JOIN instead of multiple queries
+    return await db
       .select({
-        challengeId: contestChallenges.challengeId
+        id: challenges.id,
+        title: challenges.title,
+        description: challenges.description,
+        difficulty: challenges.difficulty,
+        category: challenges.category,
+        points: challenges.points,
+        flag: challenges.flag,
+        solveCount: challenges.solveCount,
+        createdAt: challenges.createdAt,
+        imageUrl: challenges.imageUrl
       })
       .from(contestChallenges)
+      .innerJoin(challenges, eq(contestChallenges.challengeId, challenges.id))
       .where(eq(contestChallenges.contestId, contestId));
-    
-    if (contestChallengeEntries.length === 0) {
-      return [];
-    }
-    
-    const challengeIds = contestChallengeEntries.map(c => c.challengeId);
-    
-    return await db
-      .select()
-      .from(challenges)
-      .where(sql`${challenges.id} IN (${challengeIds.join(',')})`);
   }
   
   // External flag submission methods

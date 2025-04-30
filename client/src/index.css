@@ -126,3 +126,108 @@
     font-family: 'Inter', sans-serif;
   }
 }
+
+/* Markdown Styling */
+.prose {
+  @apply text-foreground;
+}
+
+.prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+  @apply text-foreground font-bold mb-4 mt-6;
+}
+
+.prose h1 {
+  @apply text-2xl;
+}
+
+.prose h2 {
+  @apply text-xl border-b border-border pb-1;
+}
+
+.prose h3 {
+  @apply text-lg;
+}
+
+.prose p {
+  @apply mb-4 leading-relaxed;
+}
+
+.prose a {
+  @apply text-primary hover:underline;
+}
+
+.prose strong {
+  @apply font-bold text-primary;
+}
+
+.prose em {
+  @apply italic;
+}
+
+.prose blockquote {
+  @apply border-l-4 border-primary pl-4 italic my-4;
+}
+
+.prose ul {
+  @apply list-disc pl-6 mb-4;
+}
+
+.prose ol {
+  @apply list-decimal pl-6 mb-4;
+}
+
+.prose li {
+  @apply mb-1;
+}
+
+.prose img {
+  @apply max-w-full rounded-md my-4;
+}
+
+.prose code:not(pre code) {
+  @apply bg-secondary/50 px-1 py-0.5 rounded text-primary font-mono text-sm;
+}
+
+.prose pre {
+  @apply bg-black rounded-md p-4 my-4 overflow-x-auto;
+}
+
+.prose-invert {
+  @apply text-foreground;
+}
+
+.prose-invert a {
+  @apply text-primary;
+}
+
+.prose-invert code:not(pre code) {
+  @apply bg-secondary/50 text-primary;
+}
+
+.prose-invert pre {
+  @apply bg-black;
+}
+
+.prose-invert blockquote {
+  @apply border-primary;
+}
+
+.prose table {
+  @apply w-full border-collapse my-4;
+}
+
+.prose thead {
+  @apply bg-secondary/50;
+}
+
+.prose th {
+  @apply p-2 text-left font-bold border border-border;
+}
+
+.prose td {
+  @apply p-2 border border-border;
+}
+
+.prose hr {
+  @apply border-border my-6;
+}

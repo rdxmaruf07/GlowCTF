@@ -1,0 +1,69 @@
+# GlowCTF Challenge Solutions and Notes
+
+This file contains detailed notes and solutions for various CTF challenges completed on the GlowCTF platform.
+
+## Platform Challenges
+
+### Web Challenges
+- **Cookie Monster**: Inspected browser cookies to find the flag: flag{cookies_are_not_secure_storage}
+- **Hidden in Plain Sight**: Viewed page source code to find the flag: flag{source_code_reveals_secrets}
+- **Simple XSS**: Injected alert script to trigger XSS vulnerability: flag{alert_1_xss_success}
+- **HTTP Headers Investigation**: Found flag in HTTP response headers: flag{headers_contain_secrets}
+- **Robots.txt Exploration**: Checked robots.txt file to find hidden directories: flag{robots_cant_stop_humans}
+
+### Cryptography Challenges
+- **Base64 Basics**: Decoded base64 string to get the flag: flag{base64_is_not_encryption}
+- **Binary to ASCII**: Converted binary to ASCII: flag{binary_conversion}
+- **Caesar's Secret**: Decrypted Caesar cipher: flag{rotation_ciphers_are_weak}
+- **Vigenère Cipher**: Decrypted using key "CRYPTO": flag{vigenere_ciphers_are_crackable}
+- **Hash Cracking**: Cracked MD5 hash: flag{password_hashes_must_be_salted}
+
+### Forensics Challenges
+- **Metadata Extraction**: Extracted image metadata: flag{exif_data_leaks_info}
+- **Network Packet Analysis**: Analyzed pcap file: flag{wireshark_reveals_all}
+- **Advanced Steganography**: Used steganography techniques: flag{least_significant_bits}
+- **Memory Forensics**: Analyzed memory dump: flag{volatility_memory_analysis}
+
+## PicoCTF Challenges
+
+### General Skills
+- **Obedient Cat**: Downloaded and read the flag file: picoCTF{...}
+- **Python Wrangling**: Used Python script to decode flag: picoCTF{...}
+- **Wave a flag**: Used help flag on command-line program: picoCTF{...}
+- **Nice netcat...**: Converted ASCII values to text: picoCTF{...}
+- **Static ain't always noise**: Extracted strings from binary: picoCTF{...}
+
+### Cryptography
+- **Mod 26**: Applied ROT13 decryption: picoCTF{...}
+- **Mind your Ps and Qs**: Factored N to break RSA: picoCTF{...}
+- **Transformation**: Reversed the encoding algorithm: picoCTF{...}
+
+### Web Exploitation
+- **Cookies**: Manipulated cookie values: picoCTF{...}
+- **Some Assembly Required 2**: Analyzed WebAssembly code: picoCTF{...}
+
+## Platform CTF Challenges
+
+### Binary Exploitation
+- **Buffer Overflow Basics**: Exploited simple buffer overflow: flag{buffer_overflow_101}
+- **Format String Vulnerability**: Used format string to leak memory: flag{format_strings_are_dangerous}
+
+### Reverse Engineering
+- **Basic Reversing**: Analyzed assembly code to find the correct input: flag{reversing_is_fun}
+- **Patching Binary**: Modified binary to bypass authentication: flag{binary_patching_success}
+
+## Milestone Progress
+
+- Completed 10 Web challenges - Earned "Web Master" badge
+- Reached 5000 points - Earned "Point Collector" badge
+- Solved first challenge - Earned "Beginner" badge
+- Completed 5 Cryptography challenges - Earned "Cryptography Expert" badge
+
+## Notes and Tips
+
+- Always check for hidden files and directories
+- For web challenges, inspect source code, cookies, and HTTP headers
+- For cryptography challenges, identify the encryption algorithm first
+- Use tools like Wireshark for network analysis
+- For binary challenges, use tools like Ghidra or IDA Pro for analysis
+- Keep track of flags and solutions for future reference

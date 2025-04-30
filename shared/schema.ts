@@ -12,6 +12,8 @@ export const users = pgTable("users", {
   score: integer("score").notNull().default(0),
   avatarUrl: text("avatar_url"),
   createdAt: timestamp("created_at").defaultNow(),
+  isBanned: boolean("is_banned").notNull().default(false),
+  lastActive: timestamp("last_active"),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({

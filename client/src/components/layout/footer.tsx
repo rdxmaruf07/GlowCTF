@@ -10,7 +10,7 @@ export default function Footer() {
           <div className="mb-4 md:mb-0">
             <h3 className="font-orbitron text-lg mb-1 gradient-text">GlowCTF Arena</h3>
             <p className="text-sm text-muted-foreground">
-              © {new Date().getFullYear()} Secureway. All rights reserved.
+              © {new Date().getFullYear()} Team ARDR. All rights reserved.
             </p>
           </div>
           
@@ -53,7 +53,7 @@ export default function Footer() {
               rel="noopener noreferrer"
               className="text-sm flex items-center gap-1 text-muted-foreground hover:text-primary transition-colors"
             >
-              <span>Developed by Secureway</span>
+              <span>Developed by Team ARDR</span>
               <ExternalLink className="h-3 w-3" />
             </a>
           </div>

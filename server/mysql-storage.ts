@@ -1,3 +1,7 @@
+// This file implements the storage interface using MySQL
+// By default, the application uses PostgreSQL (see storage.ts)
+// This MySQL implementation is provided as an alternative option
+
 import { getDb } from "./mysql-db";
 import connectMySQL from "mysql2/promise";
 import session from "express-session";

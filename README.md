@@ -1,133 +1,162 @@
-# GlowCTF Arena
+# 🎮 GlowCTF
 
 A comprehensive Capture The Flag (CTF) cybersecurity training platform with AI chatbot assistance, multi-level challenges, and achievement system.
 
-![GlowCTF Arena Screenshot](https://images.unsplash.com/photo-1585079542156-2755d9c8a094?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1174&q=80)
+![GlowCTF Screenshot](generated-icon.png)
 
-## Features
+## ✨ Features
 
-- **Multi-Level Challenges**: From beginner-friendly to expert-level cybersecurity challenges across different categories.
-- **AI Chatbot Assistance**: Get help from both OpenAI (GPT) and Anthropic (Claude) AI assistants.
-- **Contest System**: Participate in time-limited CTF events or create your own as an admin.
-- **Achievement System**: Earn badges and climb the global leaderboard as you solve challenges.
-- **Practice Arena**: Sharpen your skills in a dedicated practice environment.
-- **Team Management**: Collaborate with other hackers on challenges and contests.
-- **Admin Tools**: Comprehensive tools for challenge and user management.
+- **🎯 Multi-Level Challenges**: From beginner-friendly to expert-level cybersecurity challenges across different categories
+- **🤖 AI Chatbot Assistance**: Get help from multiple AI providers including:
+  - 🎭 OpenAI (GPT models)
+  - 🧠 Anthropic (Claude models)
+  - 🔍 Google Gemini
+  - 🤝 Together AI
+  - 🎯 AIML API
+  - 🚀 OpenRouter
 
-## Tech Stack
+- **🏆 Achievement System**: Earn badges and climb the global leaderboard
+- **🔄 Contest System**: Participate in time-limited CTF events
+- **🔒 Secure Environment**: Robust authentication and session management
+- **📱 Responsive Design**: Works seamlessly across desktop and mobile devices
 
-- **Frontend**: React, Vite, TailwindCSS, shadcn/ui
-- **Backend**: Node.js, Express
-- **Database**: PostgreSQL with Drizzle ORM
-- **Authentication**: Passport.js with session-based authentication
-- **AI Integration**: OpenAI (GPT) and Anthropic (Claude) APIs
+## 🛠️ Tech Stack
 
-## Setup Instructions
+- **🎨 Frontend**: 
+  - ⚛️ React with Vite
+  - 🎨 TailwindCSS for styling
+  - 🧩 shadcn/ui components
+  - 📝 TypeScript for type safety
 
-### Prerequisites
+- **⚙️ Backend**: 
+  - 🟢 Node.js with Express
+  - 📝 TypeScript
+  - 🗄️ Drizzle ORM for database operations
 
-- Node.js (v18+)
-- PostgreSQL database
-- OpenAI API key (optional for chatbot functionality)
-- Anthropic API key (optional for chatbot functionality)
+- **💾 Database**: 
+  - 🐘 PostgreSQL (Neon Serverless)
+  - 🐬 MySQL (alternative option)
+  - 🗄️ Drizzle ORM for type-safe database operations
 
-### Local Development Setup
+- **🔐 Authentication**: 
+  - 🛡️ Passport.js
+  - 🔑 Session-based authentication
 
-1. **Clone the repository**
+## 📚 Documentation
 
+For detailed documentation, please refer to the [docs](./docs) directory:
+
+- 📁 [Project Structure](./docs/PROJECT_STRUCTURE.md)
+- 💾 [Database Configuration](./docs/DATABASE_CONFIG.md)
+- 🔒 [Database SSL Configuration](./docs/DATABASE_SSL_CONFIG.md)
+- 🤖 [AI Providers](./docs/AI_PROVIDERS.md)
+- 🔍 [Gemini Integration](./docs/GEMINI_INTEGRATION.md)
+- 📝 [Markdown Rendering](./docs/MARKDOWN_RENDERING.md)
+- 🔧 [Troubleshooting Guide](./docs/TROUBLESHOOTING.md)
+- 📜 [Changelog](./docs/CHANGELOG.md)
+
+## 🚀 Quick Start
+
+### 📋 Prerequisites
+
+- ⚙️ Node.js (v18+)
+- 💾 PostgreSQL database (Neon Serverless recommended)
+- 🔑 API keys for desired AI providers
+
+### ⚡ Installation
+
+1. **📥 Clone the repository**
 ```bash
-git clone https://github.com/yourusername/glowctf-arena.git
-cd glowctf-arena
+git clone https://github.com/yourusername/interactive-companion.git
+cd interactive-companion
 ```
 
-2. **Install dependencies**
-
+2. **📦 Install dependencies**
 ```bash
 npm install
 ```
 
-3. **Setup environment variables**
+3. **⚙️ Configure environment**
+Create a `.env` file with the following variables:
 
-Create a `.env` file in the root directory with the following variables:
+```env
+# Database Configuration (choose one)
+# For PostgreSQL:
+DATABASE_URL=postgresql://username:password@localhost:5432/interactive_companion
+# For MySQL:
+# MYSQL_DATABASE_URL=mysql://username:password@localhost:3306/interactive_companion
 
-```
-DATABASE_URL=postgresql://username:password@localhost:5432/glowctf
+# Optional: Control SSL verification for development environments
+# NODE_ENV=development  # Setting to development will disable SSL certificate verification
+
 SESSION_SECRET=your_session_secret
-OPENAI_API_KEY=your_openai_api_key (optional)
-ANTHROPIC_API_KEY=your_anthropic_api_key (optional)
+
+# Add API keys for your preferred AI providers
+OPENAI_API_KEY=your_openai_api_key
+ANTHROPIC_API_KEY=your_anthropic_api_key
+GEMINI_API_KEY=your_gemini_api_key
+TOGETHER_API_KEY=your_together_api_key
+AIML_API_KEY=your_aiml_api_key
+OPENROUTER_API_KEY=your_openrouter_api_key
 ```
 
-4. **Setup the database**
+4. **💾 Database Setup**
 
-Make sure PostgreSQL is running and create a database:
-
+For PostgreSQL:
 ```bash
-createdb glowctf
-```
+# Create database
+createdb interactive_companion
 
-5. **Run database migrations**
-
-```bash
+# Run migrations
 npm run db:push
 ```
 
-6. **Seed the database with initial challenges**
-
+For MySQL:
 ```bash
-npm run seed
+# Create database
+mysql -e "CREATE DATABASE interactive_companion;"
+
+# Run migrations
+npm run db:push
 ```
 
-7. **Start the development server**
+> **Note**: The application will automatically detect which database to use based on your environment variables:
+> - If `MYSQL_DATABASE_URL` is set, MySQL will be used
+> - If only `DATABASE_URL` is set, PostgreSQL will be used
+> 
+> SSL is configured by default for PostgreSQL connections. For more details, see:
+> - [Database Configuration Guide](./docs/DATABASE_CONFIG.md)
+> - [Database SSL Configuration Guide](./docs/DATABASE_SSL_CONFIG.md)
 
+5. **🚀 Start Development Server**
 ```bash
 npm run dev
 ```
 
-The application should now be running at `http://localhost:5000`.
+The application will be available at `http://localhost:5000`.
 
-### Admin Account Setup
+## 🚢 Deployment
 
-To create an admin account, use the registration form with the following admin code:
+### 🎮 Replit Deployment
+1. 🍴 Fork the repository to your Replit account
+2. ⚙️ Configure environment variables in Replit secrets
+3. 🏗️ Run `npm run build` followed by `npm start`
 
-```
-RDXUNK
-```
-
-### Deployment Instructions
-
-#### Deploy to Replit
-
-1. Fork the repository to your Replit account
-2. Set up environment variables in the Replit secrets
-3. Run `npm run build` and then `npm start`
-
-#### Deploy to Other Platforms
-
-The application can be deployed to any platform that supports Node.js applications:
-
-1. **Build the application**
+### 🌐 Other Platforms
+The application can be deployed to any platform supporting Node.js:
 
 ```bash
+# Build the application
 npm run build
-```
 
-2. **Start the production server**
-
-```bash
+# Start production server
 npm start
 ```
 
-## Project Structure
+## 📄 Contributing
 
-See [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) for detailed information about the project's file structure.
+Contributions are welcome! Please read our contributing guidelines before submitting pull requests.
 
-## Team
+## 📄 License
 
-- Abdul Mark Khan
-- Debarjyoti Routh
-- Rajat Ghorai
-- Ramji Barman
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

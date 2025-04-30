@@ -2,6 +2,8 @@ import { Badge as BadgeType } from "@shared/schema";
 import { Badge } from "@/components/ui/badge";
 import { BADGE_INFO } from "@/lib/constants";
 import { formatPoints } from "@/lib/utils";
+import { Link } from "wouter";
+import { prefetchProfileData } from "@/lib/queryClient";
 
 interface LeaderboardUser {
   id: number;
@@ -28,6 +30,12 @@ export default function LeaderboardTable({ users, currentUserRank }: Leaderboard
     );
   }
   
+  // Function to handle mouse enter on user row
+  const handleUserHover = (userId: number) => {
+    // Prefetch user data when hovering over a user
+    prefetchProfileData(userId);
+  };
+  
   return (
     <div className="bg-card rounded-lg overflow-hidden">
       <div className="w-full min-w-full divide-y divide-border">
@@ -53,6 +61,7 @@ export default function LeaderboardTable({ users, currentUserRank }: Leaderboard
                 className={`grid grid-cols-12 px-6 py-4 ${
                   isCurrentUser ? 'bg-primary bg-opacity-5 border-l-4 border-primary' : 'hover:bg-background transition'
                 }`}
+                onMouseEnter={() => handleUserHover(user.id)}
               >
                 <div className="col-span-1 flex items-center">
                   <span className={isCurrentUser ? 'text-primary font-bold' : 'text-muted-foreground'}>
@@ -61,23 +70,33 @@ export default function LeaderboardTable({ users, currentUserRank }: Leaderboard
                 </div>
                 
                 <div className="col-span-5 flex items-center">
-                  <div className="w-10 h-10 rounded-full flex-shrink-0 overflow-hidden mr-3 border border-border">
-                    {user.avatarUrl ? (
-                      <img src={user.avatarUrl} alt={user.username} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className={`w-full h-full flex items-center justify-center ${isCurrentUser ? 'bg-primary/10 text-primary' : 'bg-background text-foreground'}`}>
-                        {user.username.substring(0, 2).toUpperCase()}
-                      </div>
-                    )}
-                  </div>
-                  <div>
-                    <div className={`font-medium ${isCurrentUser ? 'text-primary' : 'text-white'}`}>
-                      {user.username}
+                  <Link to={`/profile/${user.id}`} className="flex items-center hover:opacity-80 transition-opacity">
+                    <div className="w-10 h-10 rounded-full flex-shrink-0 overflow-hidden mr-3 border border-border">
+                      {user.avatarUrl ? (
+                        <img 
+                          src={user.avatarUrl} 
+                          alt={user.username} 
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                            (e.target as HTMLImageElement).parentElement!.innerHTML = user.username.substring(0, 2).toUpperCase();
+                          }}
+                        />
+                      ) : (
+                        <div className={`w-full h-full flex items-center justify-center ${isCurrentUser ? 'bg-primary/10 text-primary' : 'bg-background text-foreground'}`}>
+                          {user.username.substring(0, 2).toUpperCase()}
+                        </div>
+                      )}
                     </div>
-                    {isCurrentUser && (
-                      <div className="text-muted-foreground text-xs">You</div>
-                    )}
-                  </div>
+                    <div>
+                      <div className={`font-medium ${isCurrentUser ? 'text-primary' : 'text-white'}`}>
+                        {user.username}
+                      </div>
+                      {isCurrentUser && (
+                        <div className="text-muted-foreground text-xs">You</div>
+                      )}
+                    </div>
+                  </Link>
                 </div>
                 
                 <div className="col-span-2 flex items-center justify-center">

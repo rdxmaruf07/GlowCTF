@@ -1,8 +1,9 @@
+import { User } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
-import { formatPoints } from "@/lib/utils";
+import { formatPoints, formatDate } from "@/lib/utils";
 import {
   Trophy,
   Award,
@@ -21,11 +22,12 @@ interface UserStats {
 }
 
 interface ProfileStatsProps {
+  user?: User | null;
   stats?: UserStats;
   isLoading?: boolean;
 }
 
-export default function ProfileStats({ stats, isLoading = false }: ProfileStatsProps) {
+export default function ProfileStats({ user, stats, isLoading = false }: ProfileStatsProps) {
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -35,7 +37,7 @@ export default function ProfileStats({ stats, isLoading = false }: ProfileStatsP
     );
   }
 
-  if (!stats) {
+  if (!stats || !user) {
     return (
       <Card>
         <CardHeader>
@@ -55,6 +57,9 @@ export default function ProfileStats({ stats, isLoading = false }: ProfileStatsP
   const nextLevelPoints = currentLevel * pointsPerLevel;
   const prevLevelPoints = (currentLevel - 1) * pointsPerLevel;
   const levelProgress = ((currentPoints - prevLevelPoints) / (nextLevelPoints - prevLevelPoints)) * 100;
+  
+  // Format the member since date
+  const memberSince = user.createdAt ? formatDate(user.createdAt) : "Unknown";
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -132,7 +137,7 @@ export default function ProfileStats({ stats, isLoading = false }: ProfileStatsP
                 </div>
                 <span>Member Since</span>
               </div>
-              <Badge variant="outline" className="font-mono">April 2023</Badge>
+              <Badge variant="outline" className="font-mono">{memberSince}</Badge>
             </div>
           </div>
         </CardContent>

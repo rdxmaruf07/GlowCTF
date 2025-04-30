@@ -1,7 +1,7 @@
 import { Express, Request, Response, NextFunction } from "express";
-import { storage } from "./storage";
+import { storage } from "./mysql-storage";
 import { initializeAIClients } from "./services/chatbot";
-import { User } from "@shared/schema";
+import { User } from "@shared/mysql-schema";
 
 // Add type definitions for Express
 declare global {
@@ -41,7 +41,7 @@ export function setupAdminRoutes(app: Express) {
           return {
             ...user,
             score: stats.totalPoints || 0,
-            isBanned: false, // Add appropriate field in the user schema if needed
+            isBanned: user.isBanned || false,
           };
         })
       );
@@ -61,9 +61,19 @@ export function setupAdminRoutes(app: Express) {
         return res.status(400).json({ message: "Invalid user ID" });
       }
       
-      // For now, this is a placeholder. In a real implementation, you would 
-      // add methods to update user properties like ban status, role, etc.
-      // const { isBanned, role } = req.body;
+      const { isBanned } = req.body;
+      
+      if (isBanned !== undefined) {
+        const updatedUser = await storage.updateUserBanStatus(userId, isBanned);
+        return res.json({ 
+          success: true, 
+          user: {
+            id: updatedUser.id,
+            username: updatedUser.username,
+            isBanned: updatedUser.isBanned
+          }
+        });
+      }
       
       res.json({ success: true });
     } catch (error) {

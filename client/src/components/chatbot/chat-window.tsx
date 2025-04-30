@@ -5,13 +5,22 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, SendIcon, InfoIcon } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Loader2, SendIcon, InfoIcon, Maximize2Icon, Minimize2Icon } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { atomDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 
 interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
   content: string;
+  isStreaming?: boolean;
 }
 
 interface ChatProvider {
@@ -24,14 +33,20 @@ interface ChatProvider {
 interface ChatWindowProps {
   provider: ChatProvider;
   apiKeysAvailable?: boolean;
+  chatHistory?: any[];
+  historyLoading?: boolean;
 }
 
-export default function ChatWindow({ provider, apiKeysAvailable = false }: ChatWindowProps) {
+export default function ChatWindow({ provider, apiKeysAvailable = false, chatHistory = [], historyLoading = false }: ChatWindowProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
+  const [streamingEnabled, setStreamingEnabled] = useState(true);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [streamingContent, setStreamingContent] = useState('');
+  const [isExpanded, setIsExpanded] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Initial system message
@@ -61,32 +76,182 @@ export default function ChatWindow({ provider, apiKeysAvailable = false }: ChatW
       // Create chat messages array with user's new message
       const messageArray = [...messages, { role: 'user', content: userMessage }];
       
-      // Make API call to our server for AI completion
-      const res = await apiRequest("POST", "/api/chatbot/completion", {
-        provider: provider.id,
-        messages: messageArray.filter(msg => msg.role !== 'system') // Remove system messages for API
-      });
-      
-      const responseData = await res.json();
-      
-      // Save to chat history
-      await apiRequest("POST", "/api/chatbot/history", {
-        provider: provider.id,
-        messages: [...messageArray, responseData.message],
-        title: userMessage.substring(0, 30) + "..."
-      });
-      
-      // Return the actual AI response
-      return responseData.message;
+      // If streaming is enabled, use SSE
+      if (streamingEnabled && provider.id === "openai") {
+        setIsStreaming(true);
+        setStreamingContent('');
+        
+        // Add a placeholder message for the streaming response
+        setMessages(prev => [
+          ...prev, 
+          { 
+            role: 'assistant', 
+            content: '',
+            isStreaming: true
+          }
+        ]);
+        
+        // Make API call with streaming
+        const res = await fetch('/api/chatbot/completion', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            provider: provider.id,
+            messages: messageArray.filter(msg => msg.role !== 'system'),
+            stream: true
+          }),
+        });
+        
+        // Set up the event source reader
+        const reader = res.body?.getReader();
+        const decoder = new TextDecoder();
+        
+        if (!reader) {
+          throw new Error("Failed to create stream reader");
+        }
+        
+        return new Promise((resolve, reject) => {
+          let fullContent = '';
+          
+          async function readStream() {
+            try {
+              const { done, value } = await reader.read();
+              
+              if (done) {
+                // Streaming complete
+                // Save to chat history
+                apiRequest("POST", "/api/chatbot/history", {
+                  provider: provider.id,
+                  messages: [...messageArray, { role: 'assistant', content: fullContent }],
+                  title: userMessage.substring(0, 30) + "..."
+                }).catch(console.error);
+                
+                resolve({ role: 'assistant', content: fullContent });
+                return;
+              }
+              
+              // Process the chunk
+              const chunk = decoder.decode(value, { stream: true });
+              const lines = chunk.split('\n\n').filter(line => line.trim() !== '');
+              
+              for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                  try {
+                    const data = JSON.parse(line.substring(6));
+                    
+                    if (data.error) {
+                      reject(new Error(data.error));
+                      return;
+                    }
+                    
+                    if (data.done) {
+                      // Streaming complete
+                      // Save to chat history
+                      apiRequest("POST", "/api/chatbot/history", {
+                        provider: provider.id,
+                        messages: [...messageArray, { role: 'assistant', content: fullContent }],
+                        title: userMessage.substring(0, 30) + "..."
+                      }).catch(console.error);
+                      
+                      resolve({ role: 'assistant', content: fullContent });
+                      return;
+                    }
+                    
+                    // Update the streaming content
+                    if (data.content) {
+                      fullContent = data.fullContent || (fullContent + data.content);
+                      
+                      // Update the streaming message
+                      setMessages(prev => {
+                        const newMessages = [...prev];
+                        const lastMessage = newMessages[newMessages.length - 1];
+                        if (lastMessage && lastMessage.isStreaming) {
+                          lastMessage.content = fullContent;
+                        }
+                        return newMessages;
+                      });
+                    }
+                  } catch (error) {
+                    console.error("Error parsing SSE data:", error);
+                  }
+                }
+              }
+              
+              // Continue reading
+              readStream();
+            } catch (error) {
+              console.error("Error reading stream:", error);
+              reject(error);
+            }
+          }
+          
+          readStream();
+        });
+      } else {
+        // Regular API call for non-streaming
+        const res = await apiRequest("POST", "/api/chatbot/completion", {
+          provider: provider.id,
+          messages: messageArray.filter(msg => msg.role !== 'system') // Remove system messages for API
+        });
+        
+        const responseData = await res.json();
+        
+        // Check if there was an error
+        if (!res.ok) {
+          throw new Error(responseData.message || "Failed to generate completion");
+        }
+        
+        // Save to chat history
+        await apiRequest("POST", "/api/chatbot/history", {
+          provider: provider.id,
+          messages: [...messageArray, responseData.message],
+          title: userMessage.substring(0, 30) + "..."
+        });
+        
+        // Return the actual AI response
+        return responseData.message;
+      }
     },
     onSuccess: (response) => {
-      setMessages(prev => [...prev, response]);
+      // If we were streaming, the message is already in the state
+      // Just update the isStreaming flag
+      if (isStreaming) {
+        setMessages(prev => {
+          const newMessages = [...prev];
+          const lastMessage = newMessages[newMessages.length - 1];
+          if (lastMessage && lastMessage.isStreaming) {
+            lastMessage.isStreaming = false;
+          }
+          return newMessages;
+        });
+        setIsStreaming(false);
+      } else {
+        // For non-streaming, add the new message
+        setMessages(prev => [...prev, response]);
+      }
       setInput('');
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      // If we were streaming, remove the streaming message
+      if (isStreaming) {
+        setMessages(prev => prev.filter(msg => !msg.isStreaming));
+        setIsStreaming(false);
+      }
+      
+      // Add the error message to the chat as a system message
+      setMessages(prev => [
+        ...prev, 
+        { 
+          role: 'system', 
+          content: `Error: ${error.message || "Failed to generate completion. Please check your API key and try again."}`
+        }
+      ]);
+      
       toast({
         title: "Error getting AI response",
-        description: error.message || "Failed to generate completion. Please try again.",
+        description: error.message || "Failed to generate completion. Please check your API key and try again.",
         variant: "destructive"
       });
     }
@@ -119,28 +284,87 @@ export default function ChatWindow({ provider, apiKeysAvailable = false }: ChatW
   };
 
   // Render the code block with syntax highlighting
-  const renderMessageContent = (content: string) => {
-    // Simple pattern to detect code blocks with ```
-    const parts = content.split(/(```[\s\S]*?```)/g);
+  const renderMessageContent = (content: string, isStreaming: boolean = false) => {
+    // Check if this is an error message
+    if (content.startsWith('Error:')) {
+      return (
+        <div className="bg-red-900/20 border border-red-500 rounded-md p-3 text-red-400">
+          <div className="flex items-center mb-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            <span className="font-medium">API Error</span>
+          </div>
+          <p>{content.substring(7)}</p>
+          <div className="mt-3 text-xs">
+            <span>Please check your API key in the settings or try a different provider.</span>
+          </div>
+        </div>
+      );
+    }
     
-    return parts.map((part, index) => {
-      if (part.startsWith('```') && part.endsWith('```')) {
-        // Extract language and code
-        const match = part.match(/```(\w*)\n([\s\S]*?)```/);
-        const language = match?.[1] || '';
-        const code = match?.[2] || part.slice(3, -3);
-        
-        return (
-          <pre key={index} className="bg-black p-2 rounded mt-2 text-green-500 text-xs font-mono overflow-x-auto">
-            {language && <div className="text-xs text-muted-foreground mb-1">{language}</div>}
-            <code>{code}</code>
-          </pre>
-        );
-      }
-      
-      // Regular text
-      return <p key={index} className="mt-2 first:mt-0">{part}</p>;
-    });
+    // If streaming, show the content with a cursor
+    if (isStreaming) {
+      return (
+        <div className="prose prose-invert max-w-none">
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            rehypePlugins={[rehypeRaw]}
+            components={{
+              code({node, inline, className, children, ...props}) {
+                const match = /language-(\w+)/.exec(className || '');
+                return !inline && match ? (
+                  <SyntaxHighlighter
+                    style={atomDark}
+                    language={match[1]}
+                    PreTag="div"
+                    {...props}
+                  >
+                    {String(children).replace(/\n$/, '')}
+                  </SyntaxHighlighter>
+                ) : (
+                  <code className={className} {...props}>
+                    {children}
+                  </code>
+                );
+              }
+            }}
+          >
+            {content}
+          </ReactMarkdown>
+          <span className="animate-pulse ml-1">▌</span>
+        </div>
+      );
+    }
+    
+    // Use ReactMarkdown for rendering
+    return (
+      <div className="prose prose-invert max-w-none">
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          rehypePlugins={[rehypeRaw]}
+          components={{
+            code({node, inline, className, children, ...props}) {
+              const match = /language-(\w+)/.exec(className || '');
+              return !inline && match ? (
+                <SyntaxHighlighter
+                  style={atomDark}
+                  language={match[1]}
+                  PreTag="div"
+                  {...props}
+                >
+                  {String(children).replace(/\n$/, '')}
+                </SyntaxHighlighter>
+              ) : (
+                <code className={className} {...props}>
+                  {children}
+                </code>
+              );
+            }
+          }}
+        >
+          {content}
+        </ReactMarkdown>
+      </div>
+    );
   };
 
   // Simulate AI responses for the demo
@@ -243,45 +467,14 @@ Can you provide more specific details about the challenge you're working on?
     `;
   };
   
-  // Empty state when no provider is selected or available
-  if (!provider.id || (!provider.available && apiKeysAvailable)) {
-    return (
-      <Card className="flex flex-col h-[600px]">
-        <CardContent className="flex items-center justify-center flex-col h-full text-center p-8">
-          <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-            <InfoIcon className="h-8 w-8 text-muted-foreground" />
-          </div>
-          <h3 className="text-xl font-medium mb-2">Select a Bot Assistant</h3>
-          <p className="text-muted-foreground max-w-md">
-            Choose an AI assistant from the sidebar to help you with your CTF challenges.
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
-  
-  // API Key Missing state
-  if (!provider.available && !apiKeysAvailable) {
-    return (
-      <Card className="flex flex-col h-[600px]">
-        <CardContent className="flex items-center justify-center flex-col h-full text-center p-8">
-          <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>
-          </div>
-          <h3 className="text-xl font-medium mb-2">API Key Required</h3>
-          <p className="text-muted-foreground max-w-md mb-6">
-            To use this AI assistant, you'll need to add your API key in the sidebar settings.
-          </p>
-          <Button variant="default">
-            Manage API Keys
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
+
 
   return (
-    <Card className="flex flex-col h-[600px]">
+    <Card className={`flex flex-col transition-all duration-300 ${
+      isExpanded 
+        ? 'fixed top-0 left-0 right-0 bottom-0 z-50 rounded-none h-screen w-screen' 
+        : 'h-[600px]'
+    }`}>
       {/* Chat Header */}
       <CardHeader className="border-b border-border p-4 flex-shrink-0">
         <div className="flex items-center justify-between">
@@ -295,9 +488,23 @@ Can you provide more specific details about the challenge you're working on?
             </div>
           </div>
           
-          <Button variant="ghost" size="icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground hover:text-primary"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path><line x1="10" x2="10" y1="11" y2="17"></line><line x1="14" x2="14" y1="11" y2="17"></line></svg>
-          </Button>
+          <div className="flex items-center space-x-2">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => setIsExpanded(!isExpanded)}
+              title={isExpanded ? "Minimize chat" : "Expand chat"}
+            >
+              {isExpanded ? (
+                <Minimize2Icon className="text-muted-foreground hover:text-primary h-5 w-5" />
+              ) : (
+                <Maximize2Icon className="text-muted-foreground hover:text-primary h-5 w-5" />
+              )}
+            </Button>
+            <Button variant="ghost" size="icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground hover:text-primary"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path><line x1="10" x2="10" y1="11" y2="17"></line><line x1="14" x2="14" y1="11" y2="17"></line></svg>
+            </Button>
+          </div>
         </div>
       </CardHeader>
       
@@ -309,14 +516,26 @@ Can you provide more specific details about the challenge you're working on?
             className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div 
-              className={`rounded-lg p-3 max-w-[90%] ${
+              className={`rounded-lg p-4 max-w-[90%] ${
                 message.role === 'user' 
-                  ? 'bg-primary/10 border border-primary' 
-                  : 'bg-background border border-border'
+                  ? 'bg-primary/10 border border-primary shadow-sm' 
+                  : message.role === 'system'
+                    ? 'bg-secondary/30 border border-secondary shadow-sm'
+                    : 'bg-background border border-border shadow-sm'
               }`}
             >
+              {message.role !== 'user' && (
+                <div className="flex items-center mb-2">
+                  <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center mr-2">
+                    <span dangerouslySetInnerHTML={{ __html: provider.icon }} className="text-primary text-xs" />
+                  </div>
+                  <span className="text-xs font-medium text-muted-foreground">
+                    {message.role === 'system' ? 'System' : provider.name}
+                  </span>
+                </div>
+              )}
               <div className="text-foreground text-sm">
-                {renderMessageContent(message.content)}
+                {renderMessageContent(message.content, message.isStreaming)}
               </div>
             </div>
           </div>
@@ -324,7 +543,7 @@ Can you provide more specific details about the challenge you're working on?
         
         {chatCompletionMutation.isPending && (
           <div className="flex justify-start">
-            <div className="bg-background border border-border rounded-lg p-3">
+            <div className="bg-background border border-border rounded-lg p-4 shadow-sm">
               <div className="flex items-center space-x-2">
                 <Loader2 className="h-4 w-4 animate-spin text-primary" />
                 <p className="text-sm text-muted-foreground">Generating response...</p>
@@ -338,29 +557,70 @@ Can you provide more specific details about the challenge you're working on?
       
       {/* Chat Input */}
       <CardFooter className="border-t border-border p-4">
-        <div className="flex items-center w-full">
-          <Textarea
-            rows={1}
-            placeholder="Ask me anything about CTF challenges..."
-            className="flex-1 bg-background border border-border rounded-md p-3 text-foreground focus-visible:ring-primary resize-none min-h-[60px]"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            disabled={chatCompletionMutation.isPending}
-          />
-          <Button
-            className="ml-2 p-3"
-            disabled={!input.trim() || chatCompletionMutation.isPending}
-            onClick={handleSendMessage}
-          >
-            <SendIcon className="h-5 w-5" />
-          </Button>
-        </div>
-        <div className="flex justify-between mt-2 text-xs text-muted-foreground">
-          <span>{provider.name}</span>
-          <span>Use /commands for special actions</span>
+        <div className="flex flex-col w-full">
+          <div className="flex items-center w-full">
+            <Textarea
+              rows={1}
+              placeholder="Ask me anything about CTF challenges..."
+              className="flex-1 bg-background border border-border rounded-md p-3 text-foreground focus-visible:ring-primary resize-none min-h-[60px]"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              disabled={chatCompletionMutation.isPending}
+            />
+            <Button
+              className="ml-2 p-3 h-[60px] w-[60px]"
+              disabled={!input.trim() || chatCompletionMutation.isPending}
+              onClick={handleSendMessage}
+            >
+              <SendIcon className="h-5 w-5" />
+            </Button>
+          </div>
+          <div className="flex justify-between items-center mt-2 text-xs text-muted-foreground">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="streaming-mode"
+                checked={streamingEnabled}
+                onCheckedChange={setStreamingEnabled}
+                className="h-4 w-7 data-[state=checked]:bg-primary"
+              />
+              <Label htmlFor="streaming-mode" className="text-xs cursor-pointer">
+                Real-time typing
+              </Label>
+            </div>
+            <span>🔒 Your conversations are secure</span>
+          </div>
         </div>
       </CardFooter>
+
+      {/* Chat History - Moved from sidebar to bottom of chat window */}
+      <div className="border-t border-border p-4">
+        <h3 className="font-medium text-white text-sm mb-3">Recent Conversations</h3>
+        <div className="flex flex-wrap gap-2">
+          {historyLoading ? (
+            <>
+              <div className="w-full flex space-x-2">
+                <Skeleton className="h-8 w-1/3" />
+                <Skeleton className="h-8 w-1/3" />
+                <Skeleton className="h-8 w-1/3" />
+              </div>
+            </>
+          ) : chatHistory && chatHistory.length > 0 ? (
+            chatHistory.slice(0, 5).map((chat: any) => (
+              <a 
+                key={chat.id} 
+                href="#" 
+                className="px-3 py-2 bg-secondary/30 hover:bg-secondary/50 rounded-md text-muted-foreground hover:text-primary text-sm flex items-center transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="inline-block mr-2"><path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4c0-1.1.9-2 2-2h8a2 2 0 0 1 2 2v5Z"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/></svg>
+                {chat.title || `Chat ${new Date(chat.createdAt).toLocaleDateString()}`}
+              </a>
+            ))
+          ) : (
+            <p className="text-center text-muted-foreground text-sm py-2 w-full">No chat history yet</p>
+          )}
+        </div>
+      </div>
     </Card>
   );
 }

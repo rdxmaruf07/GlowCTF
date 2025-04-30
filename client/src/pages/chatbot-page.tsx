@@ -94,10 +94,57 @@ export default function ChatbotPage() {
       return;
     }
     
+    // Basic validation for API key format
+    const apiKeyValidation = validateApiKey(selectedApiProvider, newApiKey);
+    if (!apiKeyValidation.valid) {
+      toast({
+        title: "Invalid API key format",
+        description: apiKeyValidation.message,
+        variant: "destructive",
+      });
+      return;
+    }
+    
     saveApiKeyMutation.mutate({
       provider: selectedApiProvider,
       key: newApiKey
     });
+  };
+  
+  // Basic API key format validation
+  const validateApiKey = (provider: string, key: string) => {
+    // Remove any whitespace
+    const trimmedKey = key.trim();
+    
+    switch (provider) {
+      case "openai":
+        if (!trimmedKey.startsWith("sk-") || trimmedKey.length < 20) {
+          return { 
+            valid: false, 
+            message: "OpenAI API keys should start with 'sk-' and be at least 20 characters long." 
+          };
+        }
+        break;
+      case "anthropic":
+        if (!trimmedKey.startsWith("sk-ant-") || trimmedKey.length < 20) {
+          return { 
+            valid: false, 
+            message: "Anthropic API keys should start with 'sk-ant-' and be at least 20 characters long." 
+          };
+        }
+        break;
+      case "gemini":
+        if (trimmedKey.length < 20) {
+          return { 
+            valid: false, 
+            message: "Gemini API keys should be at least 20 characters long." 
+          };
+        }
+        break;
+      // Add validation for other providers as needed
+    }
+    
+    return { valid: true, message: "" };
   };
   
   return (
@@ -110,51 +157,25 @@ export default function ChatbotPage() {
           </div>
         </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Chatbot Sidebar */}
-          <div className="lg:col-span-1">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Chat Window - Now placed first and wider */}
+          <div className="lg:col-span-8 order-2 lg:order-1">
+            <ChatWindow
+              provider={
+                providers.find(p => p.id === selectedProvider) || 
+                { id: "", name: "Select a provider", icon: "", available: false }
+              }
+              apiKeysAvailable={userApiKeys?.length > 0}
+              chatHistory={chatHistory}
+              historyLoading={historyLoading}
+            />
+          </div>
+          
+          {/* Chatbot Sidebar - Now placed second and narrower */}
+          <div className="lg:col-span-4 order-1 lg:order-2">
             <div className="bg-card rounded-lg p-5">
-              <h3 className="font-medium text-white mb-4">Available Assistants</h3>
-              
-              {/* Chatbot Selection */}
-              <div className="space-y-2 mb-6">
-                {keysLoading ? (
-                  <>
-                    <Skeleton className="h-14 w-full rounded-md" />
-                    <Skeleton className="h-14 w-full rounded-md" />
-                    <Skeleton className="h-14 w-full rounded-md" />
-                  </>
-                ) : (
-                  providers.map((provider) => (
-                    <button
-                      key={provider.id}
-                      className={`w-full flex items-center p-3 rounded-md 
-                        ${selectedProvider === provider.id 
-                          ? 'bg-primary/10 border border-primary text-primary' 
-                          : (provider.available 
-                              ? 'hover:bg-secondary hover:text-primary transition' 
-                              : 'text-muted-foreground hover:bg-secondary/50 transition cursor-not-allowed'
-                            )
-                        }`}
-                      onClick={() => provider.available && setSelectedProvider(provider.id)}
-                      disabled={!provider.available}
-                    >
-                      <div className="w-8 h-8 rounded-full bg-background flex items-center justify-center mr-3">
-                        <span dangerouslySetInnerHTML={{ __html: provider.icon }} />
-                      </div>
-                      <span>{provider.name}</span>
-                      {!provider.available && (
-                        <span className="ml-auto text-xs px-2 py-0.5 rounded bg-secondary text-muted-foreground">
-                          No API Key
-                        </span>
-                      )}
-                    </button>
-                  ))
-                )}
-              </div>
-              
-              {/* API Key Management */}
-              <div className="p-4 border border-border rounded-md mb-4">
+              {/* API Key Management - Moved to top */}
+              <div className="p-4 border border-border rounded-md mb-6">
                 <h3 className="font-medium text-white text-sm mb-3">API Keys</h3>
                 <p className="text-muted-foreground text-xs mb-3">Add your API keys to use these assistants.</p>
                 
@@ -210,44 +231,45 @@ export default function ChatbotPage() {
                 </Dialog>
               </div>
               
-              {/* Chat History */}
-              <div>
-                <h3 className="font-medium text-white text-sm mb-3">Recent Conversations</h3>
-                <div className="space-y-2">
-                  {historyLoading ? (
-                    <>
-                      <Skeleton className="h-6 w-full" />
-                      <Skeleton className="h-6 w-full" />
-                      <Skeleton className="h-6 w-full" />
-                    </>
-                  ) : chatHistory && chatHistory.length > 0 ? (
-                    chatHistory.slice(0, 5).map((chat: any) => (
-                      <a 
-                        key={chat.id} 
-                        href="#" 
-                        className="block p-2 text-muted-foreground hover:text-primary text-sm truncate"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="inline-block mr-2"><path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4c0-1.1.9-2 2-2h8a2 2 0 0 1 2 2v5Z"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/></svg>
-                        {chat.title || `Chat ${new Date(chat.createdAt).toLocaleDateString()}`}
-                      </a>
-                    ))
-                  ) : (
-                    <p className="text-center text-muted-foreground text-sm py-2">No chat history yet</p>
-                  )}
-                </div>
+              <h3 className="font-medium text-white mb-4">Available Assistants</h3>
+              
+              {/* Chatbot Selection */}
+              <div className="space-y-2 mb-6">
+                {keysLoading ? (
+                  <>
+                    <Skeleton className="h-14 w-full rounded-md" />
+                    <Skeleton className="h-14 w-full rounded-md" />
+                    <Skeleton className="h-14 w-full rounded-md" />
+                  </>
+                ) : (
+                  providers.map((provider) => (
+                    <button
+                      key={provider.id}
+                      className={`w-full flex items-center p-3 rounded-md 
+                        ${selectedProvider === provider.id 
+                          ? 'bg-primary/10 border border-primary text-primary' 
+                          : (provider.available 
+                              ? 'hover:bg-secondary hover:text-primary transition' 
+                              : 'text-muted-foreground hover:bg-secondary/50 transition cursor-not-allowed'
+                            )
+                        }`}
+                      onClick={() => provider.available && setSelectedProvider(provider.id)}
+                      disabled={!provider.available}
+                    >
+                      <div className="w-8 h-8 rounded-full bg-background flex items-center justify-center mr-3">
+                        <span dangerouslySetInnerHTML={{ __html: provider.icon }} />
+                      </div>
+                      <span>{provider.name}</span>
+                      {!provider.available && (
+                        <span className="ml-auto text-xs px-2 py-0.5 rounded bg-secondary text-muted-foreground">
+                          No API Key
+                        </span>
+                      )}
+                    </button>
+                  ))
+                )}
               </div>
             </div>
-          </div>
-          
-          {/* Chat Window */}
-          <div className="lg:col-span-3">
-            <ChatWindow
-              provider={
-                providers.find(p => p.id === selectedProvider) || 
-                { id: "", name: "Select a provider", icon: "", available: false }
-              }
-              apiKeysAvailable={userApiKeys?.length > 0}
-            />
           </div>
         </div>
       </div>

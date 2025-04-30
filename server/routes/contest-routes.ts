@@ -1,14 +1,15 @@
 import { Express, Request, Response, NextFunction } from "express";
-import { storage } from "../storage";
+import { storage } from "../mysql-storage";
 import { isAdmin } from "../admin";
 import { sql, eq } from "drizzle-orm";
-import { db } from "../db";
-import { contests, contestChallenges, type Contest, type InsertContest, type ContestChallenge, type InsertContestChallenge } from "@shared/schema";
+import { getDb } from "../mysql-db";
+import { contests, contestChallenges, type Contest, type InsertContest, type ContestChallenge, type InsertContestChallenge } from "@shared/mysql-schema";
 
 export function setupContestRoutes(app: Express) {
   // Get all contests
   app.get("/api/contests", async (req, res, next) => {
     try {
+      const db = await getDb();
       const allContests = await db.select().from(contests);
       res.json(allContests);
     } catch (error) {
@@ -25,6 +26,7 @@ export function setupContestRoutes(app: Express) {
         return res.status(400).json({ message: "Invalid contest ID" });
       }
       
+      const db = await getDb();
       const [contest] = await db
         .select()
         .from(contests)
@@ -53,6 +55,7 @@ export function setupContestRoutes(app: Express) {
       }
       
       // Create the contest
+      const db = await getDb();
       const [newContest] = await db.insert(contests).values({
         title,
         description,
@@ -85,6 +88,7 @@ export function setupContestRoutes(app: Express) {
       }
       
       // Update the contest
+      const db = await getDb();
       const [updatedContest] = await db
         .update(contests)
         .set({
@@ -117,6 +121,7 @@ export function setupContestRoutes(app: Express) {
         return res.status(400).json({ message: "Invalid contest ID" });
       }
       
+      const db = await getDb();
       // First delete all contest-challenge associations
       await db
         .delete(contestChallenges)
@@ -143,6 +148,7 @@ export function setupContestRoutes(app: Express) {
         return res.status(400).json({ message: "Invalid contest or challenge ID" });
       }
       
+      const db = await getDb();
       // Check if the contest exists
       const [contest] = await db
         .select()
@@ -239,14 +245,21 @@ export function setupContestRoutes(app: Express) {
         return res.status(400).json({ message: "Flag submissions are only allowed for external contests" });
       }
       
-      // Create a pending flag submission for admin review
-      // In a real implementation, you would store this in a database table
-      // For now, we'll just return a success message
+      // Save the flag submission to the database
+      const submission = await storage.submitExternalFlag({
+        userId,
+        contestId,
+        challengeName,
+        description: description || "",
+        points,
+        flag
+      });
       
       res.json({
         success: true,
         message: "Flag submitted for review. Points will be awarded after admin verification.",
-        pendingPoints: points
+        pendingPoints: points,
+        submissionId: submission.id
       });
     } catch (error) {
       next(error);

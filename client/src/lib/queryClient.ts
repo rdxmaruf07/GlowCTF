@@ -31,6 +31,10 @@ export const getQueryFn: <T>(options: {
   async ({ queryKey }) => {
     const res = await fetch(queryKey[0] as string, {
       credentials: "include",
+      // Add cache control headers to improve performance
+      headers: {
+        'Cache-Control': 'max-age=300', // 5 minutes
+      }
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {
@@ -46,12 +50,45 @@ export const queryClient = new QueryClient({
     queries: {
       queryFn: getQueryFn({ on401: "throw" }),
       refetchInterval: false,
-      refetchOnWindowFocus: false,
-      staleTime: Infinity,
-      retry: false,
+      refetchOnWindowFocus: true, // Enable refetch on window focus for better data freshness
+      staleTime: 5 * 60 * 1000, // 5 minutes - data becomes stale after 5 minutes
+      cacheTime: 10 * 60 * 1000, // 10 minutes - data is removed from cache after 10 minutes
+      retry: 1, // Retry failed requests once
     },
     mutations: {
-      retry: false,
+      retry: 1, // Retry failed mutations once
     },
   },
 });
+
+/**
+ * Prefetch profile data for a user to improve performance when visiting profiles
+ * @param userId The ID of the user whose profile data to prefetch
+ */
+export async function prefetchProfileData(userId: string | number) {
+  if (!userId) return;
+  
+  // Prefetch basic user data
+  await queryClient.prefetchQuery({
+    queryKey: [`/api/users/${userId}`],
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+  
+  // Prefetch user stats
+  await queryClient.prefetchQuery({
+    queryKey: [`/api/users/${userId}/stats`],
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+  
+  // Prefetch user badges
+  await queryClient.prefetchQuery({
+    queryKey: [`/api/users/${userId}/badges`],
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+  
+  // Prefetch user completed challenges
+  await queryClient.prefetchQuery({
+    queryKey: [`/api/users/${userId}/completed-challenges`],
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}

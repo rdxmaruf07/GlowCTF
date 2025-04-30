@@ -1,15 +1,17 @@
 import { Challenge } from "@shared/schema";
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { getDifficultyColor, formatPoints } from "@/lib/utils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Input } from "@/components/ui/input";
-import { Loader2 } from "lucide-react";
+import { Loader2, HelpCircle, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import TeamCollaboration from "./team-collaboration";
 
 interface ChallengeCardProps {
   challenge: Challenge;
@@ -29,6 +31,8 @@ export default function ChallengeCard({ challenge, inModal = false }: ChallengeC
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [flag, setFlag] = useState("");
   const [startTime, setStartTime] = useState<number | null>(null);
+  const [showHints, setShowHints] = useState(false);
+  const [showTeamCollaboration, setShowTeamCollaboration] = useState(false);
   const { toast } = useToast();
   
   // Styling for difficulty badge
@@ -88,6 +92,13 @@ export default function ChallengeCard({ challenge, inModal = false }: ChallengeC
     },
   });
   
+  // Fetch hints
+  const { data: hintsData, isLoading: hintsLoading } = useQuery({
+    queryKey: [`/api/challenges/${challenge.id}/hints`, challenge.id],
+    enabled: showHints,
+    staleTime: Infinity,
+  });
+  
   // Open challenge dialog and record start time
   const handleOpenChallenge = () => {
     setStartTime(Date.now());
@@ -132,6 +143,54 @@ export default function ChallengeCard({ challenge, inModal = false }: ChallengeC
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
           {challenge.solveCount} solves
         </div>
+        
+        {/* Hints Section */}
+        <Accordion type="single" collapsible className="w-full">
+          <AccordionItem value="hints">
+            <AccordionTrigger 
+              onClick={() => setShowHints(true)}
+              className="text-primary hover:text-primary/80"
+            >
+              <div className="flex items-center">
+                <HelpCircle className="h-4 w-4 mr-2" />
+                Need a hint?
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              {hintsLoading ? (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  <span>Loading hints...</span>
+                </div>
+              ) : hintsData?.hints && hintsData.hints.length > 0 ? (
+                <ul className="space-y-2 pl-5 list-disc text-muted-foreground">
+                  {hintsData.hints.map((hint: string, index: number) => (
+                    <li key={index}>{hint}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-muted-foreground">No hints available for this challenge.</p>
+              )}
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+        
+        {/* Team Collaboration Toggle */}
+        <div className="mt-4">
+          <Button 
+            variant="outline" 
+            className="w-full flex items-center justify-center gap-2"
+            onClick={() => setShowTeamCollaboration(!showTeamCollaboration)}
+          >
+            <Users className="h-4 w-4" />
+            {showTeamCollaboration ? "Hide Team Collaboration" : "Show Team Collaboration"}
+          </Button>
+        </div>
+        
+        {/* Team Collaboration Section */}
+        {showTeamCollaboration && (
+          <TeamCollaboration challengeId={challenge.id} />
+        )}
         
         <div className="mt-6">
           <Input
