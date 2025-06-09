@@ -1,8 +1,9 @@
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Sparkles, Shield } from "lucide-react";
+import { ArrowRight, GraduationCap, BookOpen, Users } from "lucide-react";
 import { Link } from "wouter";
+import { MagneticButton, ScrollReveal } from "@/components/ui/advanced-animations";
 
 export default function CTASection() {
   const ref = useRef(null);
@@ -51,11 +52,11 @@ export default function CTASection() {
           {/* Badge */}
           <motion.div
             variants={itemVariants}
-            className="inline-flex items-center px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-8"
+            className="inline-flex items-center px-6 py-3 rounded-full bg-gradient-to-r from-primary/20 to-accent/20 border border-primary/30 mb-8 backdrop-blur-sm"
           >
-            <Sparkles className="w-4 h-4 text-primary mr-2" />
+            <GraduationCap className="w-5 h-5 text-primary mr-2" />
             <span className="text-sm font-medium text-primary">
-              Ready to Start?
+              Start Your Learning Journey
             </span>
           </motion.div>
 
@@ -64,18 +65,19 @@ export default function CTASection() {
             variants={itemVariants}
             className="text-3xl sm:text-4xl lg:text-6xl font-orbitron font-bold mb-6"
           >
-            Begin Your
-            <span className="block gradient-text">Cybersecurity Journey</span>
-            <span className="block text-white">Today</span>
+            Ready to Master
+            <span className="block gradient-text">Cybersecurity Skills?</span>
+            <span className="block text-white">Join Us Today!</span>
           </motion.h2>
 
           {/* Subtitle */}
           <motion.p
             variants={itemVariants}
-            className="text-xl text-muted-foreground mb-12 max-w-2xl mx-auto leading-relaxed"
+            className="text-xl text-muted-foreground mb-12 max-w-3xl mx-auto leading-relaxed"
           >
-            Join thousands of security professionals who are already advancing their 
-            careers with GlowCTF. Start with our free tier and unlock your potential.
+            Join thousands of students and professionals who are building their cybersecurity 
+            expertise with our comprehensive learning platform. Start your journey with our 
+            free educational resources and hands-on practice labs.
           </motion.p>
 
           {/* CTA Buttons */}
@@ -83,45 +85,88 @@ export default function CTASection() {
             variants={itemVariants}
             className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-16"
           >
-            <Button size="lg" className="group text-lg px-8 py-4" asChild>
-              <Link href="/auth">
-                <Shield className="mr-2 h-5 w-5" />
-                Start Free Trial
-                <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+            <MagneticButton className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-4 rounded-lg text-lg font-semibold transition-all duration-300">
+              <Link href="/auth" className="flex items-center">
+                <BookOpen className="mr-2 h-5 w-5" />
+                Start Learning Free
+                <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
-            </Button>
-            <Button size="lg" variant="outline" className="text-lg px-8 py-4">
-              Schedule Demo
-            </Button>
+            </MagneticButton>
+            
+            <MagneticButton className="border border-primary/50 hover:border-primary text-primary px-8 py-4 rounded-lg text-lg font-semibold bg-transparent hover:bg-primary/10 transition-all duration-300">
+              <div className="flex items-center">
+                <Users className="mr-2 h-5 w-5" />
+                Join Study Groups
+              </div>
+            </MagneticButton>
           </motion.div>
 
-          {/* Features List */}
+          {/* Educational Benefits */}
+          <ScrollReveal>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 max-w-4xl mx-auto">
+              <motion.div 
+                className="p-6 rounded-xl bg-card/50 border border-border backdrop-blur-sm group hover:border-primary/50 transition-all duration-300"
+                whileHover={{ scale: 1.02, y: -5 }}
+              >
+                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <BookOpen className="w-6 h-6 text-primary" />
+                </div>
+                <h3 className="text-lg font-semibold text-white mb-2">Free Learning Resources</h3>
+                <p className="text-muted-foreground text-sm">Access comprehensive tutorials, guides, and practice materials at no cost</p>
+              </motion.div>
+
+              <motion.div 
+                className="p-6 rounded-xl bg-card/50 border border-border backdrop-blur-sm group hover:border-accent/50 transition-all duration-300"
+                whileHover={{ scale: 1.02, y: -5 }}
+              >
+                <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <Users className="w-6 h-6 text-accent" />
+                </div>
+                <h3 className="text-lg font-semibold text-white mb-2">Collaborative Learning</h3>
+                <p className="text-muted-foreground text-sm">Connect with peers, form study groups, and learn together</p>
+              </motion.div>
+
+              <motion.div 
+                className="p-6 rounded-xl bg-card/50 border border-border backdrop-blur-sm group hover:border-green-500/50 transition-all duration-300"
+                whileHover={{ scale: 1.02, y: -5 }}
+              >
+                <div className="w-12 h-12 bg-green-500/10 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <GraduationCap className="w-6 h-6 text-green-500" />
+                </div>
+                <h3 className="text-lg font-semibold text-white mb-2">Academic Support</h3>
+                <p className="text-muted-foreground text-sm">AI-powered tutoring and instant help when you need it</p>
+              </motion.div>
+            </div>
+          </ScrollReveal>
+
+          {/* Educational Features */}
           <motion.div
             variants={itemVariants}
-            className="grid grid-cols-1 sm:grid-cols-3 gap-8 max-w-3xl mx-auto"
+            className="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-8 max-w-3xl mx-auto"
           >
             <div className="flex items-center justify-center sm:justify-start">
               <div className="w-2 h-2 bg-primary rounded-full mr-3" />
-              <span className="text-muted-foreground">No credit card required</span>
+              <span className="text-muted-foreground">100% Free for Students</span>
             </div>
             <div className="flex items-center justify-center sm:justify-start">
               <div className="w-2 h-2 bg-accent rounded-full mr-3" />
-              <span className="text-muted-foreground">Instant access</span>
+              <span className="text-muted-foreground">Instant Access</span>
             </div>
             <div className="flex items-center justify-center sm:justify-start">
               <div className="w-2 h-2 bg-green-500 rounded-full mr-3" />
-              <span className="text-muted-foreground">Cancel anytime</span>
+              <span className="text-muted-foreground">No Prerequisites</span>
             </div>
           </motion.div>
         </motion.div>
       </div>
 
-      {/* Floating Elements */}
+      {/* Enhanced Floating Elements */}
       <div className="absolute inset-0 pointer-events-none">
         <motion.div
           animate={{
             y: [-20, 20, -20],
             rotate: [0, 180, 360],
+            scale: [1, 1.1, 1],
           }}
           transition={{
             duration: 8,
@@ -134,25 +179,27 @@ export default function CTASection() {
           animate={{
             y: [20, -20, 20],
             rotate: [360, 180, 0],
+            scale: [1, 1.2, 1],
           }}
           transition={{
             duration: 10,
             repeat: Infinity,
             ease: "easeInOut",
           }}
-          className="absolute top-1/3 right-1/6 w-6 h-6 bg-accent/30 hexagon"
+          className="absolute top-1/3 right-1/6 w-6 h-6 bg-accent/30 rounded-lg rotate-45"
         />
         <motion.div
           animate={{
             y: [-15, 15, -15],
             x: [-10, 10, -10],
+            rotate: [0, 90, 180, 270, 360],
           }}
           transition={{
             duration: 6,
             repeat: Infinity,
             ease: "easeInOut",
           }}
-          className="absolute bottom-1/3 left-1/5 w-4 h-4 bg-green-500/30 rotate-45"
+          className="absolute bottom-1/3 left-1/5 w-4 h-4 bg-green-500/30 rounded-full"
         />
       </div>
     </section>

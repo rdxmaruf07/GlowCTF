@@ -8,9 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ExternalLink, Flag, Clock, Award, BookOpen, Download } from "lucide-react";
+import { ExternalLink, Flag, Clock, Award, BookOpen, Download, Trophy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
 
 interface PicoCTFChallenge {
   id: string;
@@ -34,10 +33,120 @@ export default function PicoCTFChallengeList() {
   const [activeTab, setActiveTab] = useState("easy");
   const [startTime, setStartTime] = useState<number | null>(null);
   
-  // Fetch PicoCTF challenges
-  const { data: challenges = [], isLoading, error } = useQuery({
-    queryKey: ["/api/picoctf/challenges"],
-  });
+  // Mock PicoCTF challenges data
+  const mockChallenges: PicoCTFChallenge[] = [
+    // Easy challenges
+    {
+      id: "pico-1",
+      title: "Obedient Cat",
+      category: "General Skills",
+      difficulty: "easy",
+      description: "This file has a flag in plain sight (aka 'in-the-clear'). Download flag.",
+      points: 5,
+      flag_format: "picoCTF{...}",
+      files: [{ name: "flag", url: "#" }]
+    },
+    {
+      id: "pico-2", 
+      title: "Python Wrangling",
+      category: "General Skills",
+      difficulty: "easy",
+      description: "Python scripts are invoked kind of like programs in the Terminal... Can you run this Python script using this password to get the flag?",
+      points: 10,
+      flag_format: "picoCTF{...}",
+      files: [
+        { name: "ende.py", url: "#" },
+        { name: "pw.txt", url: "#" },
+        { name: "flag.txt.en", url: "#" }
+      ]
+    },
+    {
+      id: "pico-3",
+      title: "Wave a flag",
+      category: "General Skills", 
+      difficulty: "easy",
+      description: "Can you invoke help flags for a tool or binary? This program has extraordinarily helpful information...",
+      points: 10,
+      flag_format: "picoCTF{...}",
+      files: [{ name: "warm", url: "#" }]
+    },
+    {
+      id: "pico-4",
+      title: "Nice netcat",
+      category: "General Skills",
+      difficulty: "easy", 
+      description: "There is a nice program that you can talk to by using this command in a shell: $ nc mercury.picoctf.net 22902",
+      points: 15,
+      flag_format: "picoCTF{...}"
+    },
+    {
+      id: "pico-5",
+      title: "Static ain't always noise",
+      category: "General Skills",
+      difficulty: "easy",
+      description: "Can you look at the data in this binary: static? This BASH script might help!",
+      points: 20,
+      flag_format: "picoCTF{...}",
+      files: [
+        { name: "static", url: "#" },
+        { name: "ltdis.sh", url: "#" }
+      ]
+    },
+    // Medium challenges
+    {
+      id: "pico-6",
+      title: "Magikarp Ground Mission",
+      category: "General Skills",
+      difficulty: "medium",
+      description: "Do you know how to move between directories and read files in the shell? Start the container, `ssh` to it, and then `ls` once connected to begin.",
+      points: 30,
+      flag_format: "picoCTF{...}"
+    },
+    {
+      id: "pico-7",
+      title: "First Grep",
+      category: "General Skills",
+      difficulty: "medium",
+      description: "Can you find the flag in file? This would be really tedious to look through manually, something tells me there is a better way.",
+      points: 100,
+      flag_format: "picoCTF{...}",
+      files: [{ name: "file", url: "#" }]
+    },
+    {
+      id: "pico-8",
+      title: "Big Zip",
+      category: "General Skills",
+      difficulty: "medium",
+      description: "Unzip this archive and find the flag.",
+      points: 100,
+      flag_format: "picoCTF{...}",
+      files: [{ name: "big-zip-files.zip", url: "#" }]
+    },
+    // Hard challenges
+    {
+      id: "pico-9",
+      title: "Based",
+      category: "General Skills",
+      difficulty: "hard",
+      description: "To get truly 1337, you must understand different data encodings, such as hexadecimal or binary. Can you get the flag from this program to prove you are on the way to becoming 1337?",
+      points: 200,
+      flag_format: "picoCTF{...}"
+    },
+    {
+      id: "pico-10",
+      title: "plumbing",
+      category: "General Skills",
+      difficulty: "hard", 
+      description: "Sometimes you need to handle process data outside of a file. Can you find a way to keep the output from this program and search for the flag?",
+      points: 200,
+      flag_format: "picoCTF{...}"
+    }
+  ];
+
+  // Use mock data instead of API call
+  const challenges = mockChallenges;
+  const isLoading = false;
+  const error = null;
   
   // Filter challenges by difficulty
   const filteredChallenges = challenges.filter(
@@ -76,31 +185,13 @@ export default function PicoCTFChallengeList() {
     setIsSubmitting(true);
     
     try {
-      const endTime = Date.now();
-      const timeSpent = startTime ? Math.floor((endTime - startTime) / 1000) : 0;
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      const response = await apiRequest("POST", "/api/picoctf/submit", {
-        challengeId: selectedChallenge.id,
-        flag,
-        solution,
-        timeSpent,
+      toast({
+        title: "Flag Submitted!",
+        description: "Your flag has been submitted for review. This is a demo - no actual validation is performed.",
       });
-      
-      const result = await response.json();
-      
-      if (result.correct) {
-        toast({
-          title: "Correct Flag!",
-          description: "Congratulations! You've solved the challenge.",
-        });
-        setStartTime(null);
-      } else {
-        toast({
-          title: "Incorrect Flag",
-          description: "The submitted flag is incorrect. Try again!",
-          variant: "destructive",
-        });
-      }
       
       handleCloseSubmitDialog();
     } catch (error) {
@@ -114,15 +205,65 @@ export default function PicoCTFChallengeList() {
     }
   };
 
+  // Helper function to render the challenge grid
+  const renderChallengeGrid = () => {
+    if (filteredChallenges.length === 0) {
+      return (
+        <Card>
+          <CardContent className="pt-6 text-center">
+            <p className="text-muted-foreground">No PicoCTF challenges available for this difficulty level.</p>
+          </CardContent>
+        </Card>
+      );
+    }
+
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {filteredChallenges.map((challenge) => (
+          <Card key={challenge.id} className="overflow-hidden hover:shadow-md transition-shadow border-blue-200 dark:border-blue-800">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Trophy className="h-4 w-4 text-blue-500" />
+                {challenge.title}
+              </CardTitle>
+              <CardDescription className="flex items-center">
+                <Badge variant="outline" className="mr-2 border-blue-300 text-blue-700 dark:border-blue-700 dark:text-blue-300">
+                  {challenge.category}
+                </Badge>
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground line-clamp-2">
+                {challenge.description.substring(0, 100)}
+                {challenge.description.length > 100 ? "..." : ""}
+              </p>
+            </CardContent>
+            <CardFooter className="flex justify-between">
+              <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                <Award className="w-3 h-3 mr-1" />
+                {challenge.points} pts
+              </Badge>
+              <Button size="sm" onClick={() => handleChallengeSelect(challenge)} className="bg-blue-600 hover:bg-blue-700">
+                <ExternalLink className="w-3 h-3 mr-1" />
+                View Challenge
+              </Button>
+            </CardFooter>
+          </Card>
+        ))}
+      </div>
+    );
+  };
+
   // Render loading state
   if (isLoading) {
     return (
       <div className="space-y-4">
+        {renderHeader()}
         <Tabs defaultValue="easy">
-          <TabsList>
-            <TabsTrigger value="easy">Easy</TabsTrigger>
-            <TabsTrigger value="medium">Medium</TabsTrigger>
-            <TabsTrigger value="hard">Hard</TabsTrigger>
+          <TabsList className="grid grid-cols-3 w-full max-w-md mx-auto">
+            <TabsTrigger value="easy" className="text-green-600">Easy</TabsTrigger>
+            <TabsTrigger value="medium" className="text-yellow-600">Medium</TabsTrigger>
+            <TabsTrigger value="hard" className="text-red-600">Hard</TabsTrigger>
           </TabsList>
         </Tabs>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -148,27 +289,42 @@ export default function PicoCTFChallengeList() {
   // Render error state
   if (error) {
     return (
-      <Card className="border-red-500">
-        <CardHeader>
-          <CardTitle className="text-red-500">Error Loading Challenges</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p>An error occurred while loading the challenges. Please try again later.</p>
-        </CardContent>
-        <CardFooter>
-          <Button onClick={() => window.location.reload()}>Retry</Button>
-        </CardFooter>
-      </Card>
+      <div className="space-y-4">
+        {renderHeader()}
+        <Card className="border-red-500">
+          <CardHeader>
+            <CardTitle className="text-red-500">Error Loading Challenges</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p>An error occurred while loading the challenges. Please try again later.</p>
+          </CardContent>
+          <CardFooter>
+            <Button onClick={() => window.location.reload()}>Retry</Button>
+          </CardFooter>
+        </Card>
+      </div>
     );
   }
 
+  // Always render the header first, regardless of loading state
+  const renderHeader = () => (
+    <div className="text-center mb-6">
+      <h2 className="text-2xl font-bold text-blue-600 dark:text-blue-400 mb-2">PicoCTF Challenges</h2>
+      <p className="text-muted-foreground">
+        Practice with real PicoCTF challenges. These are educational challenges from Carnegie Mellon University's cybersecurity competition.
+      </p>
+    </div>
+  );
+
   return (
     <div className="space-y-4">
+      {renderHeader()}
+
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="easy">Easy</TabsTrigger>
-          <TabsTrigger value="medium">Medium</TabsTrigger>
-          <TabsTrigger value="hard">Hard</TabsTrigger>
+        <TabsList className="grid grid-cols-3 w-full max-w-md mx-auto">
+          <TabsTrigger value="easy" className="text-green-600">Easy</TabsTrigger>
+          <TabsTrigger value="medium" className="text-yellow-600">Medium</TabsTrigger>
+          <TabsTrigger value="hard" className="text-red-600">Hard</TabsTrigger>
         </TabsList>
         
         <TabsContent value="easy" className="mt-4">
@@ -188,11 +344,12 @@ export default function PicoCTFChallengeList() {
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
+                <Trophy className="h-5 w-5 text-blue-500" />
                 {selectedChallenge.title}
-                <Badge variant="outline" className="ml-2">
+                <Badge variant="outline" className="ml-2 border-blue-300 text-blue-700">
                   {selectedChallenge.category}
                 </Badge>
-                <Badge className="ml-auto">
+                <Badge className="ml-auto bg-blue-600">
                   <Award className="w-3 h-3 mr-1" />
                   {selectedChallenge.points} pts
                 </Badge>
@@ -258,7 +415,7 @@ export default function PicoCTFChallengeList() {
               <Button variant="outline" onClick={handleCloseDialog}>
                 Close
               </Button>
-              <Button onClick={handleOpenSubmitDialog}>
+              <Button onClick={handleOpenSubmitDialog} className="bg-blue-600 hover:bg-blue-700">
                 <Flag className="w-4 h-4 mr-2" />
                 Submit Flag
               </Button>
@@ -271,7 +428,7 @@ export default function PicoCTFChallengeList() {
       <Dialog open={isSubmitDialogOpen} onOpenChange={setIsSubmitDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Submit Flag</DialogTitle>
+            <DialogTitle>Submit PicoCTF Flag</DialogTitle>
             <DialogDescription>
               Enter the flag you found and a brief explanation of your solution.
             </DialogDescription>
@@ -308,7 +465,7 @@ export default function PicoCTFChallengeList() {
             <Button variant="outline" onClick={handleCloseSubmitDialog}>
               Cancel
             </Button>
-            <Button onClick={handleSubmitFlag} disabled={!flag || isSubmitting}>
+            <Button onClick={handleSubmitFlag} disabled={!flag || isSubmitting} className="bg-blue-600 hover:bg-blue-700">
               {isSubmitting ? "Submitting..." : "Submit"}
             </Button>
           </DialogFooter>
@@ -316,49 +473,4 @@ export default function PicoCTFChallengeList() {
       </Dialog>
     </div>
   );
-
-  // Helper function to render the challenge grid
-  function renderChallengeGrid() {
-    if (filteredChallenges.length === 0) {
-      return (
-        <Card>
-          <CardContent className="pt-6 text-center">
-            <p className="text-muted-foreground">No challenges available for this difficulty level.</p>
-          </CardContent>
-        </Card>
-      );
-    }
-
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredChallenges.map((challenge) => (
-          <Card key={challenge.id} className="overflow-hidden hover:shadow-md transition-shadow">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">{challenge.title}</CardTitle>
-              <CardDescription className="flex items-center">
-                <Badge variant="outline" className="mr-2">
-                  {challenge.category}
-                </Badge>
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground line-clamp-2">
-                {challenge.description.substring(0, 100)}
-                {challenge.description.length > 100 ? "..." : ""}
-              </p>
-            </CardContent>
-            <CardFooter className="flex justify-between">
-              <Badge variant="secondary">
-                <Award className="w-3 h-3 mr-1" />
-                {challenge.points} pts
-              </Badge>
-              <Button size="sm" onClick={() => handleChallengeSelect(challenge)}>
-                View Challenge
-              </Button>
-            </CardFooter>
-          </Card>
-        ))}
-      </div>
-    );
-  }
 }

@@ -2,6 +2,7 @@ import { useState } from "react";
 import AppLayout from "@/components/layout/app-layout";
 import PicoCTFChallengeList from "@/components/challenges/picoctf-challenge-list";
 import TryHackMeChallengeList from "@/components/challenges/tryhackme-challenge-list";
+import ComingSoon from "@/components/ui/coming-soon";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -27,9 +28,11 @@ export default function CTFPlatformsPage() {
           </CardHeader>
           <CardContent>
             <Tabs value={activePlatform} onValueChange={setActivePlatform} className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="picoctf">PicoCTF</TabsTrigger>
                 <TabsTrigger value="tryhackme">TryHackMe</TabsTrigger>
+                <TabsTrigger value="hackthebox">HackTheBox</TabsTrigger>
+                <TabsTrigger value="overthewire">OverTheWire</TabsTrigger>
               </TabsList>
               
               <div className="mt-6">
@@ -52,8 +55,68 @@ export default function CTFPlatformsPage() {
                   </div>
                   <TryHackMeChallengeList />
                 </TabsContent>
+
+                <TabsContent value="hackthebox">
+                  <ComingSoon 
+                    variant="section"
+                    title="HackTheBox Integration"
+                    subtitle="We're working on integrating HackTheBox challenges! Get ready for some serious penetration testing practice."
+                    showSocialMedia={true}
+                    showStats={false}
+                    showJokes={true}
+                  />
+                </TabsContent>
+
+                <TabsContent value="overthewire">
+                  <ComingSoon 
+                    variant="section"
+                    title="OverTheWire Wargames"
+                    subtitle="OverTheWire wargames are coming soon! Perfect for learning the basics of security through fun challenges."
+                    showSocialMedia={true}
+                    showStats={false}
+                    showJokes={true}
+                  />
+                </TabsContent>
               </div>
             </Tabs>
+          </CardContent>
+        </Card>
+        
+        {/* More Platforms Coming Soon */}
+        <Card className="mb-8">
+          <CardHeader className="pb-3">
+            <CardTitle>More Platforms Coming Soon! 🚀</CardTitle>
+            <CardDescription>
+              We're constantly adding new CTF platforms to expand your learning opportunities.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="p-4 border border-border rounded-lg bg-muted/20">
+                <h3 className="font-semibold text-white mb-2">🎯 VulnHub</h3>
+                <p className="text-sm text-muted-foreground">Vulnerable VMs for hands-on practice</p>
+              </div>
+              <div className="p-4 border border-border rounded-lg bg-muted/20">
+                <h3 className="font-semibold text-white mb-2">🔐 CryptoHack</h3>
+                <p className="text-sm text-muted-foreground">Modern cryptography challenges</p>
+              </div>
+              <div className="p-4 border border-border rounded-lg bg-muted/20">
+                <h3 className="font-semibold text-white mb-2">🌐 PortSwigger Web Security</h3>
+                <p className="text-sm text-muted-foreground">Web application security labs</p>
+              </div>
+              <div className="p-4 border border-border rounded-lg bg-muted/20">
+                <h3 className="font-semibold text-white mb-2">🏴‍☠️ RootMe</h3>
+                <p className="text-sm text-muted-foreground">Hacking challenges and learning</p>
+              </div>
+              <div className="p-4 border border-border rounded-lg bg-muted/20">
+                <h3 className="font-semibold text-white mb-2">🎮 SmashTheStack</h3>
+                <p className="text-sm text-muted-foreground">Binary exploitation wargames</p>
+              </div>
+              <div className="p-4 border border-border rounded-lg bg-muted/20">
+                <h3 className="font-semibold text-white mb-2">🔬 Exploit Education</h3>
+                <p className="text-sm text-muted-foreground">Memory corruption and exploitation</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
         

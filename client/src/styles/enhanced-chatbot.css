@@ -1,0 +1,224 @@
+/* Enhanced Chatbot Styles */
+
+/* Smooth scrolling for chat messages */
+.chatbot-messages {
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar for chat area */
+.scrollbar-thin {
+  scrollbar-width: thin;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--border) / 0.8);
+}
+
+/* Code block enhancements */
+.enhanced-code-block {
+  position: relative;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+}
+
+.enhanced-code-block:hover .code-actions {
+  opacity: 1;
+}
+
+.code-actions {
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+
+/* Message bubble animations */
+.message-bubble {
+  animation: slideInUp 0.3s ease-out;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Typing indicator animation */
+.typing-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.typing-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: hsl(var(--primary));
+  animation: typingDot 1.4s infinite ease-in-out;
+}
+
+.typing-dot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.typing-dot:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes typingDot {
+  0%, 80%, 100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Enhanced input focus styles */
+.enhanced-input:focus-within {
+  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.2);
+  border-color: hsl(var(--primary));
+}
+
+/* Message action buttons */
+.message-actions {
+  opacity: 0;
+  transform: translateY(4px);
+  transition: all 0.2s ease-in-out;
+}
+
+.message-bubble:hover .message-actions {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Code language badge */
+.language-badge {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* Syntax highlighting theme adjustments */
+.hljs {
+  background: hsl(var(--muted) / 0.5) !important;
+  color: hsl(var(--foreground)) !important;
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.hljs-keyword {
+  color: hsl(var(--primary)) !important;
+}
+
+.hljs-string {
+  color: hsl(142 76% 36%) !important;
+}
+
+.hljs-comment {
+  color: hsl(var(--muted-foreground)) !important;
+  font-style: italic;
+}
+
+.hljs-number {
+  color: hsl(262 83% 58%) !important;
+}
+
+.hljs-function {
+  color: hsl(221 83% 53%) !important;
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+  .hljs-string {
+    color: hsl(142 76% 56%) !important;
+  }
+  
+  .hljs-number {
+    color: hsl(262 83% 68%) !important;
+  }
+  
+  .hljs-function {
+    color: hsl(221 83% 63%) !important;
+  }
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .message-bubble {
+    max-width: 95%;
+  }
+  
+  .code-actions {
+    opacity: 1; /* Always show on mobile */
+  }
+  
+  .message-actions {
+    opacity: 1; /* Always show on mobile */
+    transform: translateY(0);
+  }
+}
+
+/* Accessibility improvements */
+.message-bubble:focus-within {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .message-bubble {
+    animation: none;
+  }
+  
+  .typing-dot {
+    animation: none;
+  }
+  
+  * {
+    transition: none !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .message-bubble {
+    border: 2px solid hsl(var(--border));
+  }
+  
+  .enhanced-code-block {
+    border: 1px solid hsl(var(--border));
+  }
+}
+
+/* Print styles */
+@media print {
+  .message-actions,
+  .code-actions,
+  .enhanced-input {
+    display: none !important;
+  }
+  
+  .message-bubble {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}

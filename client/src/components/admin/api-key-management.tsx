@@ -1,352 +1,265 @@
 import { useState, useEffect } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertCircle, Key, Trash, Save, RefreshCw } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from "@/components/ui/alert";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { toast } from "@/hooks/use-toast";
+import { Key } from "lucide-react";
 
 interface APIKey {
-  id: number;
   provider: string;
   apiKey: string;
   isActive: boolean;
-  createdAt: string;
 }
 
-export default function APIKeyManagement() {
-  const { toast } = useToast();
-  const [openAIKey, setOpenAIKey] = useState("");
-  const [anthropicKey, setAnthropicKey] = useState("");
-  const [openAIActive, setOpenAIActive] = useState(true);
-  const [anthropicActive, setAnthropicActive] = useState(true);
-  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+async function fetchApiKeys(): Promise<APIKey[]> {
+  const res = await fetch("/api/chatbot/keys");
+  if (!res.ok) {
+    throw new Error("Failed to fetch API keys");
+  }
+  return res.json();
+}
 
-  // Fetch API keys
+async function updateApiKey(data: { provider: string; key: string; isActive?: boolean }): Promise<APIKey> {
+  const res = await fetch("/api/chatbot/keys", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ provider: data.provider, key: data.key }),
+  });
+  if (!res.ok) {
+    const errorData = await res.json();
+    throw new Error(errorData.message || "Failed to update API key");
+  }
+  return res.json();
+}
+
+export function ApiKeyManagement() {
+  const queryClient = useQueryClient();
   const { data: apiKeys, isLoading } = useQuery<APIKey[]>({
-    queryKey: ["/api/admin/api-keys"],
-    retry: false,
+    queryKey: ["/api/chatbot/keys"],
+    queryFn: fetchApiKeys,
   });
 
-  // Set form values when API keys are loaded
+  const [geminiKey, setGeminiKey] = useState("");
+  const [groqKey, setGroqKey] = useState("");
+  const [xaiKey, setXaiKey] = useState("");
+  const [geminiActive, setGeminiActive] = useState(false);
+  const [groqActive, setGroqActive] = useState(false);
+  const [xaiActive, setXaiActive] = useState(false);
+
   useEffect(() => {
     if (apiKeys && Array.isArray(apiKeys)) {
-      const openAIKeyData = apiKeys.find((key: APIKey) => key.provider === "openai");
-      const anthropicKeyData = apiKeys.find((key: APIKey) => key.provider === "anthropic");
-      
-      if (openAIKeyData) {
-        setOpenAIKey(openAIKeyData.apiKey);
-        setOpenAIActive(openAIKeyData.isActive);
+      const geminiKeyData = apiKeys.find((key: APIKey) => key.provider === "gemini");
+      const groqKeyData = apiKeys.find((key: APIKey) => key.provider === "groq");
+      const xaiKeyData = apiKeys.find((key: APIKey) => key.provider === "xai");
+
+      if (geminiKeyData) {
+        setGeminiKey(geminiKeyData.apiKey);
+        setGeminiActive(geminiKeyData.isActive);
       }
-      
-      if (anthropicKeyData) {
-        setAnthropicKey(anthropicKeyData.apiKey);
-        setAnthropicActive(anthropicKeyData.isActive);
+      if (groqKeyData) {
+        setGroqKey(groqKeyData.apiKey);
+        setGroqActive(groqKeyData.isActive);
+      }
+      if (xaiKeyData) {
+        setXaiKey(xaiKeyData.apiKey);
+        setXaiActive(xaiKeyData.isActive);
       }
     }
   }, [apiKeys]);
 
-  // Update API key mutation
   const updateKeyMutation = useMutation({
-    mutationFn: async (data: { provider: string; key: string; isActive: boolean }) => {
-      // We'll still accept key in the frontend but send it as apiKey to the server
-      const requestData = {
-        provider: data.provider,
-        apiKey: data.key,
-        isActive: data.isActive
-      };
-      const res = await apiRequest("PUT", "/api/admin/api-keys", requestData);
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/api-keys"] });
+    mutationFn: updateApiKey,
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/chatbot/keys"] });
       toast({
         title: "API Key Updated",
-        description: "The API key has been successfully updated.",
+        description: `The ${data.provider} API key has been updated successfully.`,
       });
     },
     onError: (error: any) => {
       toast({
-        title: "Error Updating API Key",
-        description: error.message || "Failed to update API key. Please try again.",
+        title: "Error",
+        description: error.message || "Failed to update API key.",
         variant: "destructive",
       });
     },
   });
 
-  // Toggle API key active status mutation
-  const toggleKeyMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const res = await apiRequest("PATCH", `/api/admin/api-keys/${id}/toggle`);
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/api-keys"] });
-      toast({
-        title: "API Key Status Updated",
-        description: "The API key status has been successfully toggled.",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error Updating API Key Status",
-        description: error.message || "Failed to update API key status. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Delete API key mutation
-  const deleteKeyMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const res = await apiRequest("DELETE", `/api/admin/api-keys/${id}`);
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/api-keys"] });
-      toast({
-        title: "API Key Deleted",
-        description: "The API key has been successfully removed.",
-      });
-      setConfirmDeleteId(null);
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error Deleting API Key",
-        description: error.message || "Failed to delete API key. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Handle form submissions
-  const handleSaveOpenAI = () => {
-    if (!openAIKey.trim()) {
-      toast({
-        title: "API Key Required",
-        description: "Please enter an OpenAI API key.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
+  const handleGeminiSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
     updateKeyMutation.mutate({
-      provider: "openai",
-      key: openAIKey,
-      isActive: openAIActive,
+      provider: "gemini",
+      key: geminiKey,
+      isActive: geminiActive,
     });
   };
 
-  const handleSaveAnthropic = () => {
-    if (!anthropicKey.trim()) {
-      toast({
-        title: "API Key Required",
-        description: "Please enter an Anthropic API key.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
+  const handleGroqSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
     updateKeyMutation.mutate({
-      provider: "anthropic",
-      key: anthropicKey,
-      isActive: anthropicActive,
+      provider: "groq",
+      key: groqKey,
+      isActive: groqActive,
     });
   };
-  
-  const handleToggleStatus = (id: number) => {
-    toggleKeyMutation.mutate(id);
+
+  const handleXaiSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateKeyMutation.mutate({
+      provider: "xai",
+      key: xaiKey,
+      isActive: xaiActive,
+    });
   };
 
-  const handleDelete = (id: number) => {
-    setConfirmDeleteId(id);
-  };
-
-  const confirmDelete = () => {
-    if (confirmDeleteId) {
-      deleteKeyMutation.mutate(confirmDeleteId);
-    }
-  };
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
 
   return (
-    <Card className="border-border">
+    <Card>
       <CardHeader>
-        <CardTitle className="text-xl">AI Provider API Keys</CardTitle>
-        <CardDescription>Manage API keys for AI chatbot providers</CardDescription>
+        <CardTitle>API Key Management</CardTitle>
+        <CardDescription>Manage your API keys for different AI providers.</CardDescription>
       </CardHeader>
-      
       <CardContent>
-        <Alert className="mb-6 bg-yellow-900/20 border-yellow-600">
-          <AlertCircle className="h-4 w-4 text-yellow-600" />
-          <AlertTitle>Important</AlertTitle>
-          <AlertDescription>
-            API keys are sensitive credentials. Make sure to use environment variables in production.
-          </AlertDescription>
-        </Alert>
-        
-        <Tabs defaultValue="openai" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="openai">OpenAI</TabsTrigger>
-            <TabsTrigger value="anthropic">Anthropic</TabsTrigger>
+        <Tabs defaultValue="gemini" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="gemini">Gemini</TabsTrigger>
+            <TabsTrigger value="groq">Groq</TabsTrigger>
+            <TabsTrigger value="xai">xAI (Grok)</TabsTrigger>
           </TabsList>
-          
-          {/* OpenAI Tab */}
-          <TabsContent value="openai" className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="openai-key">OpenAI API Key</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="openai-key"
-                  type="password"
-                  placeholder="sk-..."
-                  value={openAIKey}
-                  onChange={(e) => setOpenAIKey(e.target.value)}
-                  className="flex-1"
-                />
-                <Button 
-                  variant="outline" 
-                  className="shrink-0"
-                  onClick={handleSaveOpenAI}
-                  disabled={updateKeyMutation.isPending}
-                >
-                  {updateKeyMutation.isPending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                </Button>
+
+          {/* Gemini Tab */}
+          <TabsContent value="gemini" className="space-y-4">
+            <form onSubmit={handleGeminiSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="gemini-key">Gemini API Key</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="gemini-key"
+                    type="password"
+                    value={geminiKey}
+                    onChange={(e) => setGeminiKey(e.target.value)}
+                    placeholder="Enter your Gemini API key"
+                  />
+                </div>
               </div>
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <Switch 
-                id="openai-active" 
-                checked={openAIActive}
-                onCheckedChange={(checked) => {
-                  setOpenAIActive(checked);
-                  const openAIKeyData = apiKeys?.find((key: APIKey) => key.provider === "openai");
-                  if (openAIKeyData) {
-                    handleToggleStatus(openAIKeyData.id);
-                  }
-                }}
-                disabled={toggleKeyMutation.isPending}
-              />
-              <Label htmlFor="openai-active">
-                {openAIActive ? "OpenAI (GPT) Enabled" : "OpenAI (GPT) Disabled"}
-              </Label>
-            </div>
-            
-            <div className="pt-4">
-              <p className="text-sm text-muted-foreground mb-2">API Key Information</p>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="gemini-active"
+                  checked={geminiActive}
+                  onCheckedChange={(checked) => {
+                    setGeminiActive(checked);
+                    const geminiKeyData = apiKeys?.find((key: APIKey) => key.provider === "gemini");
+                    if (geminiKeyData) {
+                      updateKeyMutation.mutate({ provider: geminiKeyData.provider, key: geminiKeyData.apiKey, isActive: checked });
+                    }
+                  }}
+                />
+                <Label htmlFor="gemini-active">
+                  {geminiActive ? "Gemini Enabled" : "Gemini Disabled"}
+                </Label>
+              </div>
+              <Button type="submit">Save Gemini Key</Button>
+            </form>
+            <div className="mt-4 text-sm text-muted-foreground">
               <ul className="space-y-2">
-                <li className="flex items-center text-sm">
+                <li>
                   <Key className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <span>OpenAI API keys start with <code className="bg-muted p-1 rounded text-xs">sk-</code></span>
-                </li>
-                <li className="flex items-center text-sm">
-                  <Key className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <span>Get your API key from <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">OpenAI dashboard</a></span>
+                  <span>Get your API key from <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Google AI Studio</a></span>
                 </li>
               </ul>
             </div>
           </TabsContent>
-          
-          {/* Anthropic Tab */}
-          <TabsContent value="anthropic" className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="anthropic-key">Anthropic API Key</Label>
-              <div className="flex gap-2">
+
+          {/* Groq Tab */}
+          <TabsContent value="groq" className="space-y-4">
+            <form onSubmit={handleGroqSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="groq-key">Groq API Key</Label>
                 <Input
-                  id="anthropic-key"
+                  id="groq-key"
                   type="password"
-                  placeholder="sk_ant-..."
-                  value={anthropicKey}
-                  onChange={(e) => setAnthropicKey(e.target.value)}
-                  className="flex-1"
+                  value={groqKey}
+                  onChange={(e) => setGroqKey(e.target.value)}
+                  placeholder="Enter your Groq API key"
                 />
-                <Button 
-                  variant="outline" 
-                  className="shrink-0"
-                  onClick={handleSaveAnthropic}
-                  disabled={updateKeyMutation.isPending}
-                >
-                  {updateKeyMutation.isPending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                </Button>
               </div>
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <Switch 
-                id="anthropic-active" 
-                checked={anthropicActive}
-                onCheckedChange={(checked) => {
-                  setAnthropicActive(checked);
-                  const anthropicKeyData = apiKeys?.find((key: APIKey) => key.provider === "anthropic");
-                  if (anthropicKeyData) {
-                    handleToggleStatus(anthropicKeyData.id);
-                  }
-                }}
-                disabled={toggleKeyMutation.isPending}
-              />
-              <Label htmlFor="anthropic-active">
-                {anthropicActive ? "Anthropic (Claude) Enabled" : "Anthropic (Claude) Disabled"}
-              </Label>
-            </div>
-            
-            <div className="pt-4">
-              <p className="text-sm text-muted-foreground mb-2">API Key Information</p>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="groq-active"
+                  checked={groqActive}
+                  onCheckedChange={(checked) => {
+                    setGroqActive(checked);
+                    const groqKeyData = apiKeys?.find((key: APIKey) => key.provider === "groq");
+                    if (groqKeyData) {
+                      updateKeyMutation.mutate({ provider: groqKeyData.provider, key: groqKeyData.apiKey, isActive: checked });
+                    }
+                  }}
+                />
+                <Label htmlFor="groq-active">
+                  {groqActive ? "Groq Enabled" : "Groq Disabled"}
+                </Label>
+              </div>
+              <Button type="submit">Save Groq Key</Button>
+            </form>
+            <div className="mt-4 text-sm text-muted-foreground">
               <ul className="space-y-2">
-                <li className="flex items-center text-sm">
+                <li>
                   <Key className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <span>Anthropic API keys start with <code className="bg-muted p-1 rounded text-xs">sk_ant-</code></span>
+                  <span>Get your API key from <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Groq Console</a></span>
                 </li>
-                <li className="flex items-center text-sm">
+              </ul>
+            </div>
+          </TabsContent>
+
+          {/* xAI Tab */}
+          <TabsContent value="xai" className="space-y-4">
+            <form onSubmit={handleXaiSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="xai-key">xAI (Grok) API Key</Label>
+                <Input
+                  id="xai-key"
+                  type="password"
+                  value={xaiKey}
+                  onChange={(e) => setXaiKey(e.target.value)}
+                  placeholder="Enter your xAI API key (starts with xai-)"
+                />
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="xai-active"
+                  checked={xaiActive}
+                  onCheckedChange={(checked) => {
+                    setXaiActive(checked);
+                    const xaiKeyData = apiKeys?.find((key: APIKey) => key.provider === "xai");
+                    if (xaiKeyData) {
+                      updateKeyMutation.mutate({ provider: xaiKeyData.provider, key: xaiKeyData.apiKey, isActive: checked });
+                    }
+                  }}
+                />
+                <Label htmlFor="xai-active">
+                  {xaiActive ? "xAI (Grok) Enabled" : "xAI (Grok) Disabled"}
+                </Label>
+              </div>
+              <Button type="submit">Save xAI Key</Button>
+            </form>
+            <div className="mt-4 text-sm text-muted-foreground">
+              <ul className="space-y-2">
+                <li>
                   <Key className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <span>Get your API key from <a href="https://console.anthropic.com/keys" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Anthropic console</a></span>
+                  <span>Get your API key from <a href="https://vercel.com/glowctf/~/ai" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Vercel AI Dashboard</a></span>
                 </li>
               </ul>
             </div>
           </TabsContent>
         </Tabs>
       </CardContent>
-      
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={confirmDeleteId !== null} onOpenChange={(open) => !open && setConfirmDeleteId(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirm Deletion</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete this API key? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmDeleteId(null)}>
-              Cancel
-            </Button>
-            <Button 
-              variant="destructive" 
-              onClick={confirmDelete}
-              disabled={deleteKeyMutation.isPending}
-            >
-              {deleteKeyMutation.isPending ? "Deleting..." : "Delete"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </Card>
   );
 }

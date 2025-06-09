@@ -42,7 +42,7 @@ export default function ArtifactViewer({
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
 
   // Typing animation effect
-  const typeText = (text: string, speed: number = 15) => {
+  const typeText = (text: string, speed: number = 100) => {
     setTypingOutput('');
     let index = 0;
 

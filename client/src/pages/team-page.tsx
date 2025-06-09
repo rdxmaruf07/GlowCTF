@@ -1,7 +1,9 @@
 import AppLayout from "@/components/layout/app-layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Github, Linkedin, Twitter, Globe } from "lucide-react";
+import { Github, Linkedin, Twitter, Globe, Eye, Lock } from "lucide-react";
+import { SecretTruthPage } from "@/components/secret-truth-page";
+import { useState } from "react";
 
 // Define a placeholder image until real photos are added
 // Define a placeholder image until real photos are added
@@ -149,19 +151,35 @@ const TeamMemberCard = ({ member }: { member: TeamMember }) => {
 };
 
 export default function TeamPage() {
+  const [isSecretPageOpen, setIsSecretPageOpen] = useState(false);
+
   return (
     <AppLayout>
       <div className="container mx-auto py-12 px-4">
-        <div className="text-center mb-12">
+        <div className="text-center mb-12 relative">
           <h1 className="text-4xl font-orbitron font-bold mb-4">
             Meet Our <span className="text-primary neon-glow">Team</span>
           </h1>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-muted-foreground max-w-2xl mx-auto mb-6">
             The GlowCTF Arena platform was built by a passionate team of
             cybersecurity enthusiasts and developers. Each team member brings
             unique skills and expertise to create this comprehensive CTF
             training platform.
           </p>
+          
+          {/* Secret Truth Button */}
+          <div className="flex justify-center">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsSecretPageOpen(true)}
+              className="group hover:bg-primary/10 hover:border-primary/50 transition-all duration-300"
+            >
+              <Eye className="mr-2 h-4 w-4 group-hover:text-primary transition-colors" />
+              <span className="text-xs">The Real Truth</span>
+              <Lock className="ml-2 h-3 w-3 opacity-60 group-hover:opacity-100 transition-opacity" />
+            </Button>
+          </div>
         </div>
 
         {/* Team section */}
@@ -194,6 +212,12 @@ export default function TeamPage() {
           </Button>
         </div>
       </div>
+
+      {/* Secret Truth Page Modal */}
+      <SecretTruthPage 
+        isOpen={isSecretPageOpen} 
+        onClose={() => setIsSecretPageOpen(false)} 
+      />
     </AppLayout>
   );
 }

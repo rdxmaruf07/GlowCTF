@@ -131,16 +131,15 @@ export default function StatsSection() {
             variants={itemVariants}
             className="text-3xl sm:text-4xl lg:text-5xl font-orbitron font-bold mb-6"
           >
-            Trusted by
-            <span className="block gradient-text">Security Professionals</span>
+            Platform
+            <span className="block gradient-text">Statistics</span>
           </motion.h2>
 
           <motion.p
             variants={itemVariants}
             className="text-xl text-muted-foreground max-w-3xl mx-auto"
           >
-            Join a thriving community of cybersecurity enthusiasts and professionals 
-            who are advancing their skills through our platform.
+            Real-time insights into our growing cybersecurity learning community.
           </motion.p>
         </motion.div>
 

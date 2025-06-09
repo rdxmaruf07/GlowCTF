@@ -240,3 +240,147 @@ export const createEntranceVariants = (direction: 'up' | 'down' | 'left' | 'righ
     },
   };
 };
+
+// ReactBits-inspired animation variants
+export const floatingVariants: Variants = {
+  animate: {
+    y: [-20, 20, -20],
+    x: [-10, 10, -10],
+    transition: {
+      duration: 6,
+      repeat: Infinity,
+      ease: "easeInOut",
+    },
+  },
+};
+
+export const blurBlinkVariants: Variants = {
+  animate: {
+    filter: ["blur(0px)", "blur(8px)", "blur(0px)"],
+    opacity: [1, 0.7, 1],
+    transition: {
+      duration: 1.5,
+      repeat: Infinity,
+      ease: "easeInOut",
+    },
+  },
+};
+
+export const pulsingGlowVariants: Variants = {
+  animate: {
+    boxShadow: [
+      "0 0 20px 5px rgba(59, 130, 246, 0.3)",
+      "0 0 30px 15px rgba(59, 130, 246, 0.5)",
+      "0 0 20px 5px rgba(59, 130, 246, 0.3)"
+    ],
+    transition: {
+      duration: 2,
+      repeat: Infinity,
+      ease: "easeInOut",
+    },
+  },
+};
+
+export const breathingVariants: Variants = {
+  animate: {
+    scale: [1, 1.05, 1],
+    opacity: [0.8, 1, 0.8],
+    transition: {
+      duration: 3,
+      repeat: Infinity,
+      ease: "easeInOut",
+    },
+  },
+};
+
+export const wobbleVariants: Variants = {
+  hover: {
+    rotate: [-3, 3, -3],
+    scale: [1, 1.03, 1],
+    transition: {
+      duration: 0.5,
+      repeat: 3,
+      ease: "easeInOut",
+    },
+  },
+};
+
+export const shimmerVariants: Variants = {
+  animate: {
+    backgroundPosition: ["200% 0", "-200% 0"],
+    transition: {
+      duration: 2,
+      repeat: Infinity,
+      ease: "linear",
+    },
+  },
+};
+
+// Utility function to create floating animation with custom parameters
+export const createFloatingVariants = (
+  range: number = 20,
+  duration: number = 4,
+  direction: 'vertical' | 'horizontal' | 'circular' = 'vertical'
+): Variants => {
+  const animations = {
+    vertical: {
+      y: [-range, range, -range],
+      rotate: [-2, 2, -2],
+    },
+    horizontal: {
+      x: [-range, range, -range],
+      rotate: [-2, 2, -2],
+    },
+    circular: {
+      x: [-range, range, 0, -range],
+      y: [-range, 0, range, -range],
+      rotate: [0, 90, 180, 270, 360],
+    },
+  };
+
+  return {
+    animate: {
+      ...animations[direction],
+      transition: {
+        duration,
+        repeat: Infinity,
+        ease: "easeInOut",
+      },
+    },
+  };
+};
+
+// Utility function to create blur blink animation
+export const createBlurBlinkVariants = (
+  blurIntensity: number = 8,
+  speed: number = 1.5
+): Variants => ({
+  animate: {
+    filter: [`blur(0px)`, `blur(${blurIntensity}px)`, `blur(0px)`],
+    opacity: [1, 0.7, 1],
+    transition: {
+      duration: speed,
+      repeat: Infinity,
+      ease: "easeInOut",
+    },
+  },
+});
+
+// Utility function to create pulsing glow animation
+export const createPulsingGlowVariants = (
+  color: string = "rgba(59, 130, 246, 0.5)",
+  intensity: number = 20
+): Variants => ({
+  animate: {
+    boxShadow: [
+      `0 0 ${intensity}px 5px ${color}`,
+      `0 0 ${intensity * 1.5}px ${intensity * 0.75}px ${color}`,
+      `0 0 ${intensity}px 5px ${color}`
+    ],
+    transition: {
+      duration: 2,
+      repeat: Infinity,
+      ease: "easeInOut",
+    },
+  },
+});

@@ -2,9 +2,9 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import { Pool } from 'pg';
-import mysql from 'mysql2/promise';
-import { drizzle as drizzlePg } from 'drizzle-orm/node-postgres';
-import { drizzle as drizzleMysql } from 'drizzle-orm/mysql2';
+import mysql, { Connection, ConnectionOptions } from 'mysql2/promise';
+import { drizzle as drizzlePg, NodePgDatabase } from 'drizzle-orm/node-postgres';
+import { drizzle as drizzleMysql, MySql2Database } from 'drizzle-orm/mysql2';
 import * as pgSchema from "@shared/schema";
 import * as mysqlSchema from "@shared/mysql-schema";
 
@@ -18,13 +18,13 @@ const hasPostgresUrl = !!process.env.DATABASE_URL;
 export const useMySQL = hasMysqlUrl || hasMysqlConfig;
 
 // Database connection variables
-let pgPool;
-let mysqlConnection;
-let db;
+let pgPool: Pool | undefined;
+let mysqlConnection: Connection | undefined;
+let db: NodePgDatabase<typeof pgSchema> | MySql2Database<typeof mysqlSchema> | undefined;
 let connectedPool = false;
 
 // PostgreSQL connection setup
-if (!useMySQL && hasPostgresUrl) {
+if (!useMySQL && hasPostgresUrl && process.env.DATABASE_URL) {
   // Configure connection pooling for PostgreSQL
   const poolConfig = {
     connectionString: process.env.DATABASE_URL,
@@ -56,17 +56,6 @@ if (!useMySQL && hasPostgresUrl) {
 
 // MySQL connection setup
 if (useMySQL) {
-  // MySQL connection configuration
-  const dbConfig = hasMysqlUrl 
-    ? process.env.MYSQL_DATABASE_URL 
-    : {
-        host: process.env.DB_HOST || 'localhost',
-        user: process.env.DB_USER || 'glowctf_user',
-        password: process.env.DB_PASSWORD || 'Maruf078692',
-        database: process.env.DB_NAME || 'glowctf',
-        port: parseInt(process.env.DB_PORT || '3306')
-      };
-
   console.log('Using MySQL database configuration');
 }
 
@@ -74,19 +63,18 @@ if (useMySQL) {
 export const checkConnection = async () => {
   if (useMySQL) {
     try {
-      // MySQL connection configuration
-      const dbConfig = hasMysqlUrl 
-        ? process.env.MYSQL_DATABASE_URL 
-        : {
-            host: process.env.DB_HOST || 'localhost',
-            user: process.env.DB_USER || 'glowctf_user',
-            password: process.env.DB_PASSWORD || 'Maruf078692',
-            database: process.env.DB_NAME || 'glowctf',
-            port: parseInt(process.env.DB_PORT || '3306')
-          };
-
       // Create a MySQL connection
-      mysqlConnection = await mysql.createConnection(dbConfig);
+      if (hasMysqlUrl) {
+        mysqlConnection = await mysql.createConnection(process.env.MYSQL_DATABASE_URL!);
+      } else {
+        mysqlConnection = await mysql.createConnection({
+          host: process.env.DB_HOST || 'localhost',
+          user: process.env.DB_USER || 'glowctf_user',
+          password: process.env.DB_PASSWORD || 'Maruf078692',
+          database: process.env.DB_NAME || 'glowctf',
+          port: parseInt(process.env.DB_PORT || '3306')
+        });
+      }
       
       // Test the connection
       await mysqlConnection.execute('SELECT 1');

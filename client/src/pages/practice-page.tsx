@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import AppLayout from "@/components/layout/app-layout";
 import PracticeCard from "@/components/practice/practice-card";
+import ComingSoon from "@/components/ui/coming-soon";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { PRACTICE_VULNERABILITIES } from "@/lib/constants";
@@ -55,26 +56,45 @@ export default function PracticePage() {
             </motion.div>
           ) : (
             // Show the list of vulnerabilities to practice
-            <motion.div
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-              variants={staggerContainerVariants}
-              initial="hidden"
-              animate="visible"
-            >
-              {PRACTICE_VULNERABILITIES.map((vulnerability, index) => (
-                <motion.div
-                  key={vulnerability.id}
-                  variants={cardVariants}
-                  whileHover="hover"
-                  custom={index}
-                >
-                  <PracticeCard
-                    vulnerability={vulnerability}
-                    onSelect={() => setSelectedVulnerability(vulnerability.id)}
-                  />
-                </motion.div>
-              ))}
-            </motion.div>
+            <>
+              <motion.div
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                variants={staggerContainerVariants}
+                initial="hidden"
+                animate="visible"
+              >
+                {PRACTICE_VULNERABILITIES.map((vulnerability, index) => (
+                  <motion.div
+                    key={vulnerability.id}
+                    variants={cardVariants}
+                    whileHover="hover"
+                    custom={index}
+                  >
+                    <PracticeCard
+                      vulnerability={vulnerability}
+                      onSelect={() => setSelectedVulnerability(vulnerability.id)}
+                    />
+                  </motion.div>
+                ))}
+              </motion.div>
+
+              {/* Coming Soon Section */}
+              <motion.div
+                className="mt-12"
+                variants={itemVariants}
+                initial="hidden"
+                animate="visible"
+              >
+                <ComingSoon 
+                  variant="section"
+                  title="Advanced Practice Labs"
+                  subtitle="More sophisticated practice environments are coming soon! Including Docker containers, network simulations, and real-world scenarios."
+                  showSocialMedia={false}
+                  showStats={false}
+                  showJokes={true}
+                />
+              </motion.div>
+            </>
           )}
         </motion.div>
       </AnimatedPage>

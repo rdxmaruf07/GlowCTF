@@ -1,4 +1,7 @@
+'use client';
+
 import { useState, useEffect } from "react";
+import { cn } from "@/lib/utils";
 
 interface TypingTextProps {
   text: string;
@@ -7,9 +10,9 @@ interface TypingTextProps {
   className?: string;
 }
 
-export default function TypingText({
+export function TypingText({
   text,
-  speed = 30, // Faster typing speed (lower = faster)
+  speed = 20, // Faster typing speed (lower = faster)
   onComplete,
   className = ""
 }: TypingTextProps) {
@@ -36,14 +39,14 @@ export default function TypingText({
   }, [text]);
 
   return (
-    <span className={className}>
+    <span className={cn("whitespace-pre-wrap", className)}>
       {displayedText}
       {currentIndex < text.length && (
-        <span className="typing-cursor">|</span>
+        <span className="animate-pulse text-primary">|</span>
       )}
     </span>
   );
 }
 
-// Export as both named and default for compatibility
-export { TypingText };
+// Export as default for compatibility
+export default TypingText;

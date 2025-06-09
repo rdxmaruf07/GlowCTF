@@ -34,14 +34,20 @@ interface Chat {
 }
 
 interface User {
-  id: string;
+  id: number;
   username: string;
-  email?: string;
-  avatar?: string;
+  password?: string;
+  email: string;
+  role: string;
+  score: number;
+  avatarUrl: string | null;
+  createdAt: Date | null;
+  isBanned: boolean;
+  lastActive: Date | null;
 }
 
 interface SidebarHistoryProps {
-  user: User | undefined;
+  user: User | null | undefined;
   onSelectChat: (chatId: string) => void;
   currentChatId: string;
 }

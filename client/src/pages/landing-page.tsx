@@ -7,10 +7,23 @@ import LandingNav from "@/components/landing/landing-nav";
 import HeroSection from "@/components/landing/hero-section";
 import FeaturesSection from "@/components/landing/features-section";
 import AboutSection from "@/components/landing/about-section";
-import StatsSection from "@/components/landing/stats-section";
+import RealtimeStats from "@/components/landing/realtime-stats";
+import LiveLeaderboard from "@/components/landing/live-leaderboard";
+import LiveChallenges from "@/components/landing/live-challenges";
+import GlobalActivityMap from "@/components/landing/global-activity-map";
+import LiveNotifications from "@/components/landing/live-notifications";
 import CTASection from "@/components/landing/cta-section";
 import AnimatedBackground from "@/components/landing/animated-background";
 import Footer from "@/components/layout/footer";
+
+// Enhanced scroll components
+import { 
+  ScrollProgress, 
+  ScrollToTop, 
+  Section, 
+  NavigationDots,
+  ParallaxContainer 
+} from "@/components/ui/enhanced-scroll";
 
 export default function LandingPage() {
   const { user } = useAuth();
@@ -20,39 +33,81 @@ export default function LandingPage() {
     return <Redirect to="/dashboard" />;
   }
 
-  // Add smooth scrolling behavior
-  useEffect(() => {
-    document.documentElement.style.scrollBehavior = "smooth";
-    
-    return () => {
-      document.documentElement.style.scrollBehavior = "auto";
-    };
-  }, []);
+  // Navigation sections for dots
+  const sections = [
+    { id: "hero", label: "Home" },
+    { id: "stats", label: "Live Stats" },
+    { id: "features", label: "Features" },
+    { id: "challenges", label: "Challenges" },
+    { id: "about", label: "About" },
+    { id: "leaderboard", label: "Leaderboard" },
+    { id: "global", label: "Global Activity" },
+    { id: "cta", label: "Get Started" }
+  ];
 
   return (
-    <div className="min-h-screen bg-background text-foreground relative overflow-x-hidden">
+    <div className="min-h-screen bg-background text-foreground relative overflow-x-hidden scroll-snap-container">
+      {/* Scroll Progress Indicator */}
+      <ScrollProgress />
+      
       {/* Animated Background */}
-      <AnimatedBackground />
+      <ParallaxContainer offset={30}>
+        <AnimatedBackground />
+      </ParallaxContainer>
       
       {/* Navigation */}
       <LandingNav />
       
+      {/* Live Notifications */}
+      <LiveNotifications />
+      
+      {/* Navigation Dots */}
+      <NavigationDots sections={sections} />
+      
+      {/* Scroll to Top Button */}
+      <ScrollToTop />
+      
       {/* Main Content */}
       <main className="relative z-10">
         {/* Hero Section */}
-        <HeroSection />
+        <Section id="hero" snapToSection>
+          <HeroSection />
+        </Section>
+        
+        {/* Real-time Stats Section */}
+        <Section id="stats" snapToSection>
+          <RealtimeStats />
+        </Section>
         
         {/* Features Section */}
-        <FeaturesSection />
+        <Section id="features" snapToSection>
+          <FeaturesSection />
+        </Section>
+
+        {/* Live Challenges Section */}
+        <Section id="challenges" snapToSection>
+          <LiveChallenges />
+        </Section>
 
         {/* About Section */}
-        <AboutSection />
+        <Section id="about" snapToSection>
+          <AboutSection />
+        </Section>
 
-        {/* Stats Section */}
-        <StatsSection />
+        {/* Live Leaderboard Section */}
+        <Section id="leaderboard" snapToSection>
+          <LiveLeaderboard />
+        </Section>
+
+        {/* Global Activity Map */}
+        <Section id="global" snapToSection>
+          <GlobalActivityMap />
+        </Section>
         
         {/* CTA Section */}
-        <CTASection />
+        <Section id="cta" snapToSection>
+          <CTASection />
+        </Section>
       </main>
       
       {/* Footer */}

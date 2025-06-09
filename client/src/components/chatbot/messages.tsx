@@ -2,7 +2,10 @@
 
 import { useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PreviewMessage } from './preview-message';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Greeting } from './greeting';
 
 interface UIMessage {
@@ -82,16 +85,48 @@ export function Messages({
               delay: index * 0.05 
             }}
           >
-            <PreviewMessage
-              chatId={chatId}
-              message={message}
-              vote={votes?.find(vote => vote.messageId === message.id)}
-              setMessages={setMessages}
-              reload={reload}
-              isReadonly={isReadonly}
-              requiresScrollPadding={index === messages.length - 1}
-              onTypingComplete={onTypingComplete}
-            />
+            <div className={`flex items-start space-x-4 ${message.role === 'user' ? 'justify-end' : ''}`}>
+              {message.role === 'assistant' && (
+                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold">
+                  AI
+                </div>
+              )}
+              <div className={`p-4 rounded-lg max-w-2xl ${message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+                {message.role === 'assistant' ? (
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      code({ node, className, children, ...props }: any) {
+                        const match = /language-(\w+)/.exec(className || '');
+                        return match ? (
+                          <SyntaxHighlighter
+                            style={vscDarkPlus as any}
+                            language={match[1]}
+                            PreTag="div"
+                            {...props}
+                          >
+                            {String(children).replace(/\n$/, '')}
+                          </SyntaxHighlighter>
+                        ) : (
+                          <code className={className} {...props}>
+                            {children}
+                          </code>
+                        );
+                      },
+                    }}
+                  >
+                    {message.content}
+                  </ReactMarkdown>
+                ) : (
+                  message.content
+                )}
+              </div>
+              {message.role === 'user' && (
+                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center font-bold">
+                  You
+                </div>
+              )}
+            </div>
           </motion.div>
         ))}
 

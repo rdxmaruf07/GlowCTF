@@ -1,8 +1,6 @@
 'use client';
 
-import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-import { Button } from "@/components/ui/button";
 import { 
   Sidebar, 
   SidebarContent, 
@@ -16,8 +14,6 @@ import {
 import { SidebarUserNav } from "./sidebar-user-nav";
 import { SidebarNavigation } from "./sidebar-navigation";
 import { Link } from "wouter";
-import { Plus } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export function AppSidebar() {
   const { user } = useAuth();
@@ -38,7 +34,7 @@ export function AppSidebar() {
                 onClick={() => setOpenMobile(false)}
                 className="flex flex-row gap-3 items-center"
               >
-                <div className="flex aspect-square size-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-lg">
+                <div className="flex aspect-square size-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-lg hover:shadow-xl transition-shadow">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     width="20"

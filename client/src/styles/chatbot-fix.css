@@ -1,0 +1,56 @@
+/* Additional fixes for chatbot UI centering */
+
+/* Fix message container width and alignment */
+.message-container {
+  width: 100%;
+  max-width: 800px !important;
+}
+
+.message-container.user {
+  margin-left: auto !important;
+  margin-right: 0 !important;
+}
+
+.message-container.assistant {
+  margin-right: auto !important;
+  margin-left: 0 !important;
+}
+
+/* Fix chat messages container */
+.chat-messages {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.chat-messages > div {
+  max-width: 800px;
+  width: 100%;
+}
+
+/* Fix input container */
+.chat-input-container {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/* Fix for chat interface container */
+.chatbot-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Fix for message content */
+.message-content {
+  width: 100%;
+  max-width: 800px;
+}
+
+/* Fix for chat interface in fullscreen mode */
+.chat-fullscreen .chat-messages > div {
+  max-width: 800px;
+  margin: 0 auto;
+}

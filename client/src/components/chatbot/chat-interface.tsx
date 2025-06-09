@@ -293,7 +293,7 @@ export default function ChatInterface({
                 : 'chat-messages scrollbar-always'
             }`}
           >
-            <div className="max-w-4xl mx-auto px-4 py-6">
+            <div className="max-w-4xl w-full mx-auto px-4 py-6">
               <AnimatePresence>
                 {(messages || []).map((message, index) => (
                   <Message
@@ -359,7 +359,7 @@ export default function ChatInterface({
         <div className={`border-t border-border ${
           isFullScreen ? 'chat-input' : ''
         }`}>
-          <div className="max-w-4xl mx-auto p-4">
+          <div className="max-w-4xl w-full mx-auto p-4">
             <div className="relative">
               <Textarea
                 ref={textareaRef}

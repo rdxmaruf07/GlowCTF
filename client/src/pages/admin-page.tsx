@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import AppLayout from "@/components/layout/app-layout";
 import ChallengeManagement from "@/components/admin/challenge-management";
 import UserManagement from "@/components/admin/user-management";
-import APIKeyManagement from "@/components/admin/api-key-management";
+import { ApiKeyManagement as APIKeyManagement } from "@/components/admin/api-key-management";
 import ContestManagement from "@/components/admin/contest-management";
 import AddChallengeForm from "@/components/admin/add-challenge-form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";

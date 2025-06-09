@@ -125,113 +125,113 @@ export default function ChallengesPage() {
                 <TabsTrigger value="platformctf" className="text-success">Platform CTF</TabsTrigger>
               </TabsList>
 
-          <TabsContent value="platform" className="mt-6">
-            {/* Challenge Difficulty Tabs */}
-            <div className="mb-6">
-              <Tabs defaultValue="all" value={difficultyFilter} onValueChange={setDifficultyFilter}>
-                <TabsList className="grid grid-cols-4 w-full max-w-md">
-                  <TabsTrigger value="all">All</TabsTrigger>
-                  <TabsTrigger value="easy" className="text-green-400">Easy</TabsTrigger>
-                  <TabsTrigger value="medium" className="text-pink-400">Medium</TabsTrigger>
-                  <TabsTrigger value="hard" className="text-amber-400">Hard</TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
+              <TabsContent value="platform" className="mt-6">
+                {/* Challenge Difficulty Tabs */}
+                <div className="mb-6">
+                  <Tabs defaultValue="all" value={difficultyFilter} onValueChange={setDifficultyFilter}>
+                    <TabsList className="grid grid-cols-4 w-full max-w-md">
+                      <TabsTrigger value="all">All</TabsTrigger>
+                      <TabsTrigger value="easy" className="text-green-400">Easy</TabsTrigger>
+                      <TabsTrigger value="medium" className="text-pink-400">Medium</TabsTrigger>
+                      <TabsTrigger value="hard" className="text-amber-400">Hard</TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                </div>
 
-            {/* Challenges Grid */}
-            {isLoading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {[...Array(6)].map((_, i) => (
-                  <div key={i} className="flex flex-col space-y-3">
-                    <Skeleton className="h-40 w-full rounded-lg" />
-                    <Skeleton className="h-4 w-3/4" />
-                    <Skeleton className="h-3 w-full" />
-                    <Skeleton className="h-8 w-full mt-2" />
+                {/* Challenges Grid */}
+                {isLoading ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {[...Array(6)].map((_, i) => (
+                      <div key={i} className="flex flex-col space-y-3">
+                        <Skeleton className="h-40 w-full rounded-lg" />
+                        <Skeleton className="h-4 w-3/4" />
+                        <Skeleton className="h-3 w-full" />
+                        <Skeleton className="h-8 w-full mt-2" />
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            ) : error ? (
-              <div className="text-center py-10">
-                <h3 className="text-xl font-medium text-destructive">
-                  Failed to load challenges
-                </h3>
-                <p className="text-muted-foreground mt-2">
-                  Please try refreshing the page.
-                </p>
-              </div>
-            ) : paginatedChallenges.length === 0 ? (
-              <div className="text-center py-10">
-                <h3 className="text-xl font-medium">
-                  No challenges found
-                </h3>
-                <p className="text-muted-foreground mt-2">
-                  Try changing your search or filters.
-                </p>
-              </div>
-            ) : (
-              <motion.div
-                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-                variants={staggerContainerVariants}
-                initial="hidden"
-                animate="visible"
-              >
-                {paginatedChallenges.map((challenge: Challenge, index: number) => (
+                ) : error ? (
+                  <div className="text-center py-10">
+                    <h3 className="text-xl font-medium text-destructive">
+                      Failed to load challenges
+                    </h3>
+                    <p className="text-muted-foreground mt-2">
+                      Please try refreshing the page.
+                    </p>
+                  </div>
+                ) : paginatedChallenges.length === 0 ? (
+                  <div className="text-center py-10">
+                    <h3 className="text-xl font-medium">
+                      No challenges found
+                    </h3>
+                    <p className="text-muted-foreground mt-2">
+                      Try changing your search or filters.
+                    </p>
+                  </div>
+                ) : (
                   <motion.div
-                    key={challenge.id}
-                    variants={cardVariants}
-                    whileHover="hover"
-                    custom={index}
+                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                    variants={staggerContainerVariants}
+                    initial="hidden"
+                    animate="visible"
                   >
-                    <ChallengeCard challenge={challenge} />
-                  </motion.div>
-                ))}
-              </motion.div>
-            )}
-            
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <Pagination className="mt-8">
-                <PaginationContent>
-                  <PaginationItem>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                      disabled={currentPage === 1}
-                      className="gap-1"
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                      <span>Previous</span>
-                    </Button>
-                  </PaginationItem>
-                  
-                  {[...Array(totalPages)].map((_, i) => (
-                    <PaginationItem key={i}>
-                      <PaginationLink
-                        isActive={currentPage === i + 1}
-                        onClick={() => setCurrentPage(i + 1)}
+                    {paginatedChallenges.map((challenge: Challenge, index: number) => (
+                      <motion.div
+                        key={challenge.id}
+                        variants={cardVariants}
+                        whileHover="hover"
+                        custom={index}
                       >
-                        {i + 1}
-                      </PaginationLink>
-                    </PaginationItem>
-                  ))}
-                  
-                  <PaginationItem>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                      disabled={currentPage === totalPages}
-                      className="gap-1"
-                    >
-                      <span>Next</span>
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
-            )}
-          </TabsContent>
+                        <ChallengeCard challenge={challenge} />
+                      </motion.div>
+                    ))}
+                  </motion.div>
+                )}
+                
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <Pagination className="mt-8">
+                    <PaginationContent>
+                      <PaginationItem>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                          disabled={currentPage === 1}
+                          className="gap-1"
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                          <span>Previous</span>
+                        </Button>
+                      </PaginationItem>
+                      
+                      {[...Array(totalPages)].map((_, i) => (
+                        <PaginationItem key={i}>
+                          <PaginationLink
+                            isActive={currentPage === i + 1}
+                            onClick={() => setCurrentPage(i + 1)}
+                          >
+                            {i + 1}
+                          </PaginationLink>
+                        </PaginationItem>
+                      ))}
+                      
+                      <PaginationItem>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                          disabled={currentPage === totalPages}
+                          className="gap-1"
+                        >
+                          <span>Next</span>
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                )}
+              </TabsContent>
 
               <TabsContent value="picoctf" className="mt-6">
                 <PicoCTFChallengeList />

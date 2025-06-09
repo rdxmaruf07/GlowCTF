@@ -22,10 +22,16 @@ import { useAuth } from '@/hooks/use-auth';
 import { getInitials } from '@/lib/utils';
 
 interface User {
-  id: string;
+  id: number;
   username: string;
-  email?: string;
-  avatar?: string;
+  password?: string;
+  email: string;
+  role: string;
+  score: number;
+  avatarUrl: string | null;
+  createdAt: Date | null;
+  isBanned: boolean;
+  lastActive: Date | null;
 }
 
 interface SidebarUserNavProps {
@@ -34,12 +40,12 @@ interface SidebarUserNavProps {
 
 export function SidebarUserNav({ user }: SidebarUserNavProps) {
   const [, setLocation] = useLocation();
-  const { logout } = useAuth();
+  const { logoutMutation } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
-      await logout();
+      await logoutMutation.mutateAsync();
       setLocation('/auth');
     } catch (error) {
       console.error('Logout failed:', error);
@@ -65,7 +71,7 @@ export function SidebarUserNav({ user }: SidebarUserNavProps) {
         >
           <div className="flex items-center gap-2 min-w-0">
             <Avatar className="h-8 w-8">
-              <AvatarImage src={user.avatar} alt={user.username} />
+              <AvatarImage src={user.avatarUrl ?? undefined} alt={user.username} />
               <AvatarFallback className="text-xs">
                 {getInitials(user.username)}
               </AvatarFallback>
