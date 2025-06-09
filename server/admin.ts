@@ -1,0 +1,203 @@
+import { Express, Request, Response, NextFunction } from "express";
+import { storage } from "./mysql-storage";
+import { initializeAIClients } from "./services/chatbot";
+import { User } from "@shared/mysql-schema";
+
+// Add type definitions for Express
+declare global {
+  namespace Express {
+    interface User {
+      id: number;
+      username: string;
+      role: string;
+    }
+  }
+}
+
+// Middleware to check if user is admin
+export function isAdmin(req: Request, res: Response, next: NextFunction) {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  
+  if (req.user.role !== "admin") {
+    return res.status(403).json({ message: "Forbidden: Admin access required" });
+  }
+  
+  next();
+}
+
+export function setupAdminRoutes(app: Express) {
+  // Get all users (admin only)
+  app.get("/api/admin/users", isAdmin, async (req, res, next) => {
+    try {
+      // Get all users from the database
+      const allUsers = await storage.getAllUsers();
+      
+      // For each user, get their score
+      const usersWithDetails = await Promise.all(
+        allUsers.map(async (user) => {
+          const stats = await storage.getUserStats(user.id);
+          return {
+            ...user,
+            score: stats.totalPoints || 0,
+            isBanned: user.isBanned || false,
+          };
+        })
+      );
+      
+      res.json(usersWithDetails);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  // Update user (ban/unban, change role, etc)
+  app.patch("/api/admin/users/:id", isAdmin, async (req, res, next) => {
+    try {
+      const userId = parseInt(req.params.id);
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      const { isBanned } = req.body;
+      
+      if (isBanned !== undefined) {
+        const updatedUser = await storage.updateUserBanStatus(userId, isBanned);
+        return res.json({ 
+          success: true, 
+          user: {
+            id: updatedUser.id,
+            username: updatedUser.username,
+            isBanned: updatedUser.isBanned
+          }
+        });
+      }
+      
+      res.json({ success: true });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Get all API keys
+  app.get("/api/admin/api-keys", isAdmin, async (req, res, next) => {
+    try {
+      const apiKeys = await storage.getAllChatbotKeys();
+      
+      // Remove full key values for security, just show the first and last few characters
+      const maskedKeys = apiKeys.map(key => {
+        const originalKey = key.apiKey;
+        let maskedKey = originalKey;
+        
+        if (originalKey && originalKey.length > 8) {
+          maskedKey = originalKey.substring(0, 4) + "..." + originalKey.substring(originalKey.length - 4);
+        }
+        
+        return {
+          ...key,
+          apiKey: maskedKey
+        };
+      });
+      
+      res.json(maskedKeys);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  // Update API key
+  app.put("/api/admin/api-keys", isAdmin, async (req, res, next) => {
+    try {
+      const { provider, apiKey, isActive } = req.body;
+      
+      if (!provider || !apiKey) {
+        return res.status(400).json({ message: "Provider and apiKey are required" });
+      }
+      
+      // Check if the key for this provider already exists
+      const existingKey = await storage.getChatbotKeyByProvider(provider);
+      
+      let result;
+      
+      if (existingKey) {
+        // Update existing key
+        result = await storage.updateChatbotKey(existingKey.id, {
+          apiKey: apiKey,
+          isActive: isActive ?? true
+        });
+      } else {
+        // Create new key
+        if (!req.user || !req.user.id) {
+          return res.status(401).json({ message: "Unauthorized" });
+        }
+        
+        result = await storage.saveChatbotKey({
+          userId: req.user.id,
+          provider,
+          apiKey: apiKey,
+          isActive: isActive ?? true
+        });
+      }
+      
+      // Reinitialize AI clients after key changes
+      await initializeAIClients();
+      
+      res.json({ success: true, result });
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  // Toggle API key status (active/inactive)
+  app.patch("/api/admin/api-keys/:id/toggle", isAdmin, async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid ID" });
+      }
+      
+      // Get the current key
+      const apiKeys = await storage.getAllChatbotKeys();
+      const currentKey = apiKeys.find(key => key.id === id);
+      
+      if (!currentKey) {
+        return res.status(404).json({ message: "API key not found" });
+      }
+      
+      // Toggle active status
+      const result = await storage.updateChatbotKey(id, {
+        isActive: !currentKey.isActive
+      });
+      
+      // Reinitialize AI clients after changing active status
+      await initializeAIClients();
+      
+      res.json({ success: true, result });
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  // Delete API key
+  app.delete("/api/admin/api-keys/:id", isAdmin, async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid ID" });
+      }
+      
+      await storage.deleteChatbotKey(id);
+      
+      // Reinitialize AI clients after key deletion
+      await initializeAIClients();
+      
+      res.json({ success: true });
+    } catch (error) {
+      next(error);
+    }
+  });
+}

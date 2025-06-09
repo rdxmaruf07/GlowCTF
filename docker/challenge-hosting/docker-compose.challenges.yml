@@ -1,0 +1,212 @@
+# Docker Compose configuration for CTF Challenge Hosting
+# This file manages containerized challenges that require live services
+
+version: '3.8'
+
+networks:
+  ctf-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+services:
+  # Web Challenge Example
+  web-challenge-1:
+    build: 
+      context: ./challenges/web/sql-injection-basic
+      dockerfile: Dockerfile
+    container_name: ctf-web-1
+    ports:
+      - "8001:80"
+    environment:
+      - FLAG=CTF{sql_injection_basic_flag}
+      - MYSQL_ROOT_PASSWORD=rootpass
+      - MYSQL_DATABASE=vulnerable_app
+    volumes:
+      - ./challenges/web/sql-injection-basic/app:/var/www/html:ro
+    networks:
+      - ctf-network
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/run
+    mem_limit: 256m
+    cpus: 0.5
+
+  # Binary Exploitation Challenge
+  pwn-challenge-1:
+    build:
+      context: ./challenges/pwn/buffer-overflow-1
+      dockerfile: Dockerfile
+    container_name: ctf-pwn-1
+    ports:
+      - "9001:9999"
+    environment:
+      - FLAG=CTF{buffer_overflow_basic}
+    networks:
+      - ctf-network
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+    mem_limit: 128m
+    cpus: 0.3
+
+  # Crypto Service Challenge
+  crypto-challenge-1:
+    build:
+      context: ./challenges/crypto/rsa-weak-keys
+      dockerfile: Dockerfile
+    container_name: ctf-crypto-1
+    ports:
+      - "8002:8080"
+    environment:
+      - FLAG=CTF{weak_rsa_keys_are_bad}
+      - RSA_KEY_SIZE=512  # Intentionally weak for challenge
+    networks:
+      - ctf-network
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+    mem_limit: 128m
+    cpus: 0.3
+
+  # Forensics Challenge with File Server
+  forensics-challenge-1:
+    build:
+      context: ./challenges/forensics/network-analysis
+      dockerfile: Dockerfile
+    container_name: ctf-forensics-1
+    ports:
+      - "8003:80"
+    environment:
+      - FLAG=CTF{network_forensics_flag}
+    volumes:
+      - ./challenges/forensics/network-analysis/pcap-files:/var/www/html/files:ro
+    networks:
+      - ctf-network
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+    mem_limit: 256m
+    cpus: 0.3
+
+  # Reverse Engineering Challenge
+  rev-challenge-1:
+    build:
+      context: ./challenges/reverse/basic-crackme
+      dockerfile: Dockerfile
+    container_name: ctf-rev-1
+    ports:
+      - "8004:80"
+    environment:
+      - FLAG=CTF{reverse_engineering_fun}
+    volumes:
+      - ./challenges/reverse/basic-crackme/binaries:/var/www/html/downloads:ro
+    networks:
+      - ctf-network
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+    mem_limit: 128m
+    cpus: 0.3
+
+  # Challenge Management Service
+  challenge-manager:
+    build:
+      context: ./challenge-manager
+      dockerfile: Dockerfile
+    container_name: ctf-challenge-manager
+    ports:
+      - "8000:8000"
+    environment:
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - CTF_NETWORK=ctf-network
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./challenges:/challenges:ro
+    networks:
+      - ctf-network
+    restart: unless-stopped
+    depends_on:
+      - web-challenge-1
+      - pwn-challenge-1
+      - crypto-challenge-1
+      - forensics-challenge-1
+      - rev-challenge-1
+
+  # Nginx Reverse Proxy for Challenge Access
+  challenge-proxy:
+    image: nginx:alpine
+    container_name: ctf-proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    networks:
+      - ctf-network
+    restart: unless-stopped
+    depends_on:
+      - web-challenge-1
+      - crypto-challenge-1
+      - forensics-challenge-1
+      - rev-challenge-1
+
+  # Redis for Challenge Session Management
+  challenge-redis:
+    image: redis:7-alpine
+    container_name: ctf-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - ctf-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+
+  # Challenge Health Monitor
+  health-monitor:
+    build:
+      context: ./health-monitor
+      dockerfile: Dockerfile
+    container_name: ctf-health-monitor
+    environment:
+      - REDIS_URL=redis://challenge-redis:6379
+      - CHECK_INTERVAL=30
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - ctf-network
+    restart: unless-stopped
+    depends_on:
+      - challenge-redis
+
+volumes:
+  redis_data:
+    driver: local
+
+# Health checks for all services
+x-healthcheck: &default-healthcheck
+  test: ["CMD", "curl", "-f", "http://localhost/health"]
+  interval: 30s
+  timeout: 10s
+  retries: 3
+  start_period: 40s

@@ -1,0 +1,130 @@
+GlowCTF Arena — Features List (Notes)
+🧩 1. Login System
+ User login
+
+ Admin login
+
+ CTF Hacker login
+
+ Role-based access control (different dashboards)
+
+🗣️ 2. Chatbot Section
+ Multiple bots available (OpenAI, Claude, HuggingFace, etc.)
+
+ API key system (user must add API key to access bots)
+
+ Easy bot switching (pick which bot to chat with)
+
+🎯 3. CTF Section
+ Level-wise CTFs: Easy, Medium, Hard
+
+ Static CTFs (questions, decoding, hidden flags)
+
+ Dynamic CTFs (vulnerable web pages like SQL Injection, XSS)
+
+ Points awarded per CTF challenge solved
+
+ Time-based bonus points (fast solving = extra points)
+
+🏆 4. Leaderboard
+ Real-time leaderboard
+
+ Points-based ranking
+
+ Top 10 users display
+
+ Profile link from leaderboard
+
+🥇 5. Badges System
+ First Blood Badge (first challenge solved)
+
+ Speedrunner Badge (solve in 5 min)
+
+ Brainiac Badge (solve Hard CTF)
+
+ Streak Master Badge (5 wins in a row)
+
+ Top 3 Badge (reach top 3 on leaderboard)
+
+ Badges displayed on user profile
+
+🛡️ 6. Admin Panel
+ Add new CTF challenges
+
+ Create new Chatbots
+
+ View and ban users
+
+ View CTF solving statistics
+
+ Update/delete existing challenges
+
+💀 7. Vulnerable CTF Pages (Practice hacking!)
+ SQL Injection vulnerable login form
+
+ XSS vulnerable comment section
+
+ File Upload vulnerability
+
+ Command Injection page
+
+ Open Redirect vulnerability
+
+📜 8. Profile Page
+ Username and Avatar
+
+ View badges earned
+
+ View total score
+
+ Edit profile settings
+
+📈 9. Score System
+ Base points for each level (Easy, Medium, Hard)
+
+ Bonus points for speed
+
+ Deduct points if wrong flag submitted (optional)
+
+🔥 10. Future Extras (optional upgrades)
+ 2FA (Two Factor Authentication for Admins)
+
+ Daily CTF Challenges (one challenge each day)
+
+ Live CTF Battles (1v1 competition)
+
+ Team-based CTFs (make a hacking team)
+
+ Trophy Cabinet (special awards)
+
+
+
+ Frontend (Next.js / React.js)
+    - Chatbot Page
+    - CTF Challenges Page
+    - Login / Register
+    - Leaderboard
+    - Admin Dashboard
+
+Backend (FastAPI / Flask)
+    - Authentication (JWT)
+    - Chatbot API Handling
+    - CTF Logic and Flag Validation
+    - Badge Unlock System
+    - Scoring System
+
+Database (PostgreSQL / Supabase)
+    - Users (Profile, Role, Score)
+    - CTF Challenges (Questions, Flags, Difficulty)
+    - Badges (Earned/Locked)
+    - Chatbot API Info
+
+
+Section	Description
+🔑 Authentication	Login system for User, Admin, and CTF Hacker roles
+🗣️ Chatbot Zone	Access multiple AI bots using API keys
+🎯 CTF Challenges	Level-wise CTF challenges (Easy, Medium, Hard)
+💀 Vulnerable Pages	Simulated vulnerabilities (SQL Injection, XSS, File Upload, etc.)
+🏆 Leaderboard	Live user rankings based on points
+🥇 Badges System	Unlock achievements by solving challenges
+🛡️ Admin Panel	Manage CTFs, bots, users, and monitor progress

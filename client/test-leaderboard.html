@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Leaderboard API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: #ffffff;
+        }
+        .container {
+            background-color: #2a2a2a;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .error {
+            color: #ff6b6b;
+            background-color: #2d1b1b;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success {
+            color: #51cf66;
+            background-color: #1b2d1b;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .loading {
+            color: #74c0fc;
+        }
+        button {
+            background-color: #339af0;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #228be6;
+        }
+        pre {
+            background-color: #1a1a1a;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+        .user-item {
+            background-color: #333;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>🏆 Leaderboard API Test</h1>
+    
+    <div class="container">
+        <h2>API Test Controls</h2>
+        <button onclick="testLeaderboard()">Test Leaderboard API</button>
+        <button onclick="testLogin()">Test Login</button>
+        <button onclick="clearResults()">Clear Results</button>
+    </div>
+
+    <div class="container">
+        <h2>Test Results</h2>
+        <div id="results"></div>
+    </div>
+
+    <div class="container">
+        <h2>Leaderboard Data</h2>
+        <div id="leaderboard"></div>
+    </div>
+
+    <script>
+        const resultsDiv = document.getElementById('results');
+        const leaderboardDiv = document.getElementById('leaderboard');
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : 'loading';
+            resultsDiv.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+
+        function clearResults() {
+            resultsDiv.innerHTML = '';
+            leaderboardDiv.innerHTML = '';
+        }
+
+        async function testLogin() {
+            log('Testing login...', 'loading');
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        username: 'RdxMaruF',
+                        password: 'password123'
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    log(`✅ Login successful: ${JSON.stringify(data)}`, 'success');
+                } else {
+                    log(`❌ Login failed: ${data.message || 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Login error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testLeaderboard() {
+            log('Testing leaderboard API...', 'loading');
+            try {
+                const response = await fetch('/api/leaderboard');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    log(`✅ Leaderboard API successful! Found ${data.length} users`, 'success');
+                    displayLeaderboard(data);
+                } else {
+                    log(`❌ Leaderboard API failed: ${data.message || 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Leaderboard API error: ${error.message}`, 'error');
+            }
+        }
+
+        function displayLeaderboard(data) {
+            if (!data || data.length === 0) {
+                leaderboardDiv.innerHTML = '<div class="error">No leaderboard data found</div>';
+                return;
+            }
+
+            let html = '<h3>📊 Leaderboard Results:</h3>';
+            data.forEach((user, index) => {
+                const rank = user.rank || (index + 1);
+                const badges = user.badges ? user.badges.length : 0;
+                const challenges = user.solvedChallenges || 0;
+                
+                html += `
+                    <div class="user-item">
+                        <div>
+                            <strong>#${rank} ${user.username}</strong>
+                            <br>
+                            <small>Challenges: ${challenges} | Badges: ${badges}</small>
+                        </div>
+                        <div>
+                            <strong>${user.score} pts</strong>
+                        </div>
+                    </div>
+                `;
+            });
+
+            leaderboardDiv.innerHTML = html;
+        }
+
+        // Auto-test on page load
+        window.onload = function() {
+            log('🚀 Leaderboard API Test Page Loaded', 'success');
+            log('Click "Test Leaderboard API" to test the functionality', 'info');
+        };
+    </script>
+</body>
+</html>
