@@ -360,7 +360,7 @@ xAI API Key
 1. **📥 Clone the Repository**
 ```bash
 git clone https://github.com/rdxmaruf07/GlowCTF.git
-cd glowctf
+cd GlowCTF
 ```
 
 2. **📦 Install Dependencies**
